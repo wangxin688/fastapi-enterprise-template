@@ -1,0 +1,82 @@
+[project]
+name = "fastapi-enterprise-template"
+version = "0.1.0"
+description = "cookiecutter enterprise template for fastapi"
+authors = [
+    { name = "jeffry", email = "182467653@qq.com" }
+]
+dependencies = [
+    "fastapi>=0.108.0",
+    "alembic>=1.13.1",
+    "sqlalchemy>=2.0.25",
+    "pydantic-settings>=2.1.0",
+    "pydantic-extra-types>=2.3.0",
+    "uvicorn[standard]>=0.25.0",
+    "pyjwt>=2.8.0",
+]
+readme = "README.md"
+requires-python = ">= 3.11"
+
+# [project.scripts]
+# hello = "naas-backend:hello"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.rye]
+managed = true
+dev-dependencies = [
+    "pytest>=7.4.4",
+    "pre-commit>=3.5.0",
+    "ruff>=0.1.11",
+]
+
+[tool.hatch.metadata]
+allow-direct-references = true
+
+[tool.hatch.build.targets.wheel]
+packages = ["src"]
+
+[tool.ruff]
+line-length = 120
+select = ["ALL"]
+ignore = ["D", "ANN401", "ANN101", "ANN102"]
+
+[tool.ruff.flake8-bugbear]
+extend-immutable-calls=[
+    "fastapi.Depends",
+    "fastapi.Query",
+    "fastapi.params_functions.Form",
+    "fastapi.File",
+    "fastapi.Path",
+]
+
+[tool.pytest.ini_options]
+addopts = "--cov-report term --cov-config=.coveragerc -W ignore:DeprecationWarning --cov=src -v"
+xfail_strict = true
+asyncio_mode = "auto"
+markers = ["pytest.mark.anyio"]
+miniversion = "6.0"
+testpaths = ["tests"]
+
+[tool.coverage.report]
+skip_empty = true
+skip_covered = true
+precision = 2
+omit = ["*/__init__.py", "*/consts.py"]
+exclude_lines = [
+    "pragma: no cover",
+    "raise NotImplentmentError",
+    "if TYPE_CHECKING:",
+    "if typing.TYPE_CHECKING",
+    "@overload",
+    "@typing.overload",
+    "assert_never",
+    "typing.assert_never",
+]
+
+[tool.coverage.run]
+concurrency=["thread", "greenlet"]
+
+
