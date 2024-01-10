@@ -11,8 +11,8 @@ from sqlalchemy.orm import Mapped, Mapper, class_mapper, mapped_column, relation
 from sqlalchemy.orm.attributes import get_history
 
 from src.context import auth_user_ctx, orm_diff_ctx, request_id_ctx
+from src.db._types import GUID, uuid_pk
 from src.db.base import Base
-from src.db.types import GUID, uuid_pk
 
 if TYPE_CHECKING:
     from src.auth.models import User
@@ -77,7 +77,9 @@ class AuditLogMixin:
                 "__tablename__": f"{cls.__tablename__}_audit_log",
                 "__multi_tenant__": False,
                 "parent_id": mapped_column(
-                    GUID, ForeignKey(f"{cls.__tablename__}.id", ondelete="SET NULL"), nullable=True,
+                    GUID,
+                    ForeignKey(f"{cls.__tablename__}.id", ondelete="SET NULL"),
+                    nullable=True,
                 ),
                 "audit_log": relationship(cls, viewonly=True),
             },
@@ -85,8 +87,8 @@ class AuditLogMixin:
         return relationship(cls.AuditLog)
 
     @classmethod
-    def log_create(cls, mapper: Mapper, connction: Connection, target: Mapper) -> None:  # noqa: ARG003
-        connction.execute(
+    def log_create(cls, mapper: Mapper, connection: Connection, target: Mapper) -> None:  # noqa: ARG003
+        connection.execute(
             insert(cls.AuditLog),
             {
                 "request_id": request_id_ctx.get(),
@@ -98,11 +100,11 @@ class AuditLogMixin:
         )
 
     @classmethod
-    def log_update(cls, mapper: Mapper, connction: Connection, target: Mapper) -> None:  # noqa: ARG003
+    def log_update(cls, mapper: Mapper, connection: Connection, target: Mapper) -> None:  # noqa: ARG003
         changes = get_object_change(target)
         if changes is not None:
             orm_diff_ctx.set(changes)
-            connction.execute(
+            connection.execute(
                 insert(cls.AuditLog),
                 {
                     "request_id": request_id_ctx.get(),
@@ -114,8 +116,8 @@ class AuditLogMixin:
             )
 
     @classmethod
-    def log_delete(cls, mapper: Mapper, connction: Connection, target: Mapper) -> None:  # noqa: ARG003
-        connction.execute(
+    def log_delete(cls, mapper: Mapper, connection: Connection, target: Mapper) -> None:  # noqa: ARG003
+        connection.execute(
             insert(cls.AuditLog),
             {
                 "request_id": request_id_ctx.get(),
@@ -134,20 +136,19 @@ class AuditLogMixin:
 
 
 class AuditUserMixin:
-
     @declared_attr
     @classmethod
-    def created_by_fk(cls)->Mapped[UUID|None]:
+    def created_by_fk(cls) -> Mapped[UUID | None]:
         return mapped_column(GUID, ForeignKey("auth_user.id"), default=auth_user_ctx.get, nullable=True)
 
     @declared_attr
     @classmethod
-    def updated_by_fk(cls)->Mapped[UUID|None]:
+    def updated_by_fk(cls) -> Mapped[UUID | None]:
         return mapped_column(GUID, ForeignKey("auth_user.id"), default=auth_user_ctx.get, nullable=True)
 
     @declared_attr
     @classmethod
-    def created_by(cls)->Mapped["User"| None]:
+    def created_by(cls) -> Mapped["User" | None]:
         return relationship(
             "User",
             foreign_keys=[cls.created_by_fk],
@@ -155,9 +156,10 @@ class AuditUserMixin:
             enable_typechecks=False,
             uselist=False,
         )
+
     @declared_attr
     @classmethod
-    def updated_by(cls)->Mapped["User"| None]:
+    def updated_by(cls) -> Mapped["User" | None]:
         return relationship(
             "User",
             foreign_keys=[cls.updated_by_fk],

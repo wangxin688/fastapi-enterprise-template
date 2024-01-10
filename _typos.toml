@@ -1,0 +1,8 @@
+[files]
+extend-exclude = [
+    "*.json"
+]
+[default]
+extend-ignore-identifiers-re = [
+    "selectin",
+]

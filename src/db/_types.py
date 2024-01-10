@@ -9,7 +9,7 @@ from sqlalchemy.sql import expression
 from sqlalchemy.sql.elements import BindParameter, ColumnElement
 from sqlalchemy.types import TypeDecorator, TypeEngine
 
-from src.conf import settings
+from src.config import settings
 
 
 class EncryptedString(TypeDecorator):

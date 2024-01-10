@@ -5,7 +5,7 @@ from sqlalchemy import ForeignKey
 from sqlalchemy.orm import DeclarativeBase, Mapped, declared_attr, mapped_column
 
 from src.context import tenant_ctx
-from src.db.types import GUID
+from src.db._types import GUID
 
 
 class Base(DeclarativeBase):

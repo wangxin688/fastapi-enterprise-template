@@ -11,7 +11,7 @@ async_engine = create_async_engine(
     pool_pre_ping=True,
     future=True,
     connection_args={"server_settings": {"jit": "off"}},
-    pool_size=settings.DATABSE_POOL_SIZE,
-    max_overflow=settings.DATABSE_POOL_MAX_OVERFLOW,
+    pool_size=settings.DATABASE_POOL_SIZE,
+    max_overflow=settings.DATABASE_POOL_MAX_OVERFLOW,
 )
 async_session = async_sessionmaker(async_engine, autoflush=False, expires_on_commit=False)
