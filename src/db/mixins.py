@@ -43,7 +43,7 @@ def get_object_change(obj: Mapper) -> dict:
 
 
 class AuditLog:
-    id: Mapped[uuid_pk]  # noqa: A003
+    id: Mapped[uuid_pk]
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=func.now())
     request_id: Mapped[str]
     action: Mapped[str] = mapped_column(String, nullable=False)

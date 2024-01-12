@@ -6,7 +6,7 @@ class TokenInvalidError(Exception):
     ...
 
 
-class TokenExipreError(Exception):
+class TokenExpireError(Exception):
     ...
 
 

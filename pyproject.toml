@@ -48,7 +48,7 @@ packages = ["src"]
 [tool.ruff]
 line-length = 120
 select = ["ALL"]
-ignore = ["D", "ANN401", "ANN101", "ANN102", "EM101"]
+ignore = ["D", "DTZ003", "ANN401", "ANN101", "ANN102", "EM101", "PD901", "COM812", "ISC001"]
 
 [tool.ruff.extend-per-file-ignores]
 "env.py" = ["INP001", "I001", "ERA001"]

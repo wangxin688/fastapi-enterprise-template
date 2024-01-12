@@ -12,6 +12,7 @@ from starlette.responses import Response, StreamingResponse
 from starlette.types import ASGIApp
 
 from src.context import locale_ctx, request_id_ctx
+from src.i18n import ACCEPTED_LANGUAGES
 
 
 def _get_default_id() -> str:
@@ -35,9 +36,12 @@ class RequestMiddleware(BaseHTTPMiddleware):
         request_id = request.headers.get(request_id_ctx.name, self.get_default_id_func())
         request_id_ctx.set(request_id)
         language = request.headers.get(locale_ctx.name, locale_ctx.get())
+        if language not in ACCEPTED_LANGUAGES:
+            language = ACCEPTED_LANGUAGES[0]
+        locale_ctx.set(language)
         content_type = request.headers.get(self.content_type, None)
         if all((content_type, content_type == self.csv_mime, request.method == "GET")):
-            response: StreamingResponse = await call_next(request)  # type: ignore
+            response: StreamingResponse = await call_next(request)
             async for _res in response.body_iterator:
                 response_data = _res.decode()
                 if response_data:
@@ -46,7 +50,7 @@ class RequestMiddleware(BaseHTTPMiddleware):
                     df = pd.DataFrame(csv_result)
                     output = io.StringIO()
                     df.to_csv(output, encoding="utf-8", index=False)
-                    filename = f"exporting_data_{datetime.utcnow().strftime("%Y%m%d %H%M%S")}.csv"
+                    filename = f"exporting_data_{datetime.utcnow().strftime('%Y%m%d %H%M%S')}.csv"
                     csv_resp = StreamingResponse(iter([output.getvalue()]), media_type="application/otect-stream")
                     csv_resp.headers["Content-Disposition"] = f'attachment; filename="{filename}.csv"'
                     csv_resp.headers[self.id_header] = request_id

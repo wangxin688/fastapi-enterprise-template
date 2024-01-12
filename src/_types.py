@@ -53,7 +53,7 @@ class QueryParams(BaseModel):
     limit: int | None = Query(default=20, ge=0, le=1000, description="Number of results to return per request.")
     offset: int | None = Query(default=0, ge=0, description="The initial index from which return the results.")
     q: str | None = Query(default=None, description="Search for results.")
-    id: list[UUID] | None = Field(Query(default=[], description="reqeust object uniqe ID"))  # noqa: A003
+    id: list[UUID] | None = Field(Query(default=[], description="request object unique ID"))
     order_by: str | None = Query(default=None, description="Which field to use when order the results")
     order: Literal["descend", "ascend"] | None = Query(default="ascend", description="Order by dscend or ascend")
 
