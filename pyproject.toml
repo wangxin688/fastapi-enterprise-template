@@ -13,6 +13,10 @@ dependencies = [
     "pydantic-extra-types>=2.3.0",
     "uvicorn[standard]>=0.25.0",
     "pyjwt>=2.8.0",
+    "babel>=2.14.0",
+    "pandas>=2.1.4",
+    "passlib>=1.7.4",
+    "redis>=5.0.1",
 ]
 readme = "README.md"
 requires-python = ">= 3.11"
