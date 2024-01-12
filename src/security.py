@@ -26,7 +26,7 @@ class JwtTokenPayload(BaseModel):
     expires_at: datetime
 
 
-def create_jwt_token(subject: UUID, expire_seconds: int, refresh: bool) -> tuple[str, int, int]:  # noqa: FBT001
+def create_jwt_token(subject: UUID, expire_seconds: int, refresh: bool) -> tuple[str, int, int]:
     """Create jwt access token or refresh token for use
 
     Args:

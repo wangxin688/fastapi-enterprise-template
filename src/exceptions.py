@@ -20,3 +20,13 @@ class NotFoundError(Exception):
 
 class ExistError(Exception):
     ...
+
+
+sentry_ignore_errors = [
+    TokenExpireError,
+    TokenInvalidError,
+    TokenNotProvideError,
+    PermissionDenyError,
+    NotFoundError,
+    ExistError,
+]

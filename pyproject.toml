@@ -13,10 +13,10 @@ dependencies = [
     "pydantic-extra-types>=2.3.0",
     "uvicorn[standard]>=0.25.0",
     "pyjwt>=2.8.0",
-    "babel>=2.14.0",
     "pandas>=2.1.4",
     "passlib>=1.7.4",
     "redis>=5.0.1",
+    "sentry_sdk>=1.39.2",
 ]
 readme = "README.md"
 requires-python = ">= 3.11"
@@ -47,13 +47,20 @@ packages = ["src"]
 
 [tool.ruff]
 line-length = 120
+indent-width = 4
+target-version = "py311"
+
+[tool.ruff.lint]
 select = ["ALL"]
-ignore = ["D", "DTZ003", "ANN401", "ANN101", "ANN102", "EM101", "PD901", "COM812", "ISC001"]
+ignore = ["D", "G002", "DTZ003", "ANN401", "ANN101", "ANN102", "EM101", "PD901", "COM812", "ISC001", "FBT001"]
+fixable = ["ALL"]
+
 
 [tool.ruff.extend-per-file-ignores]
 "env.py" = ["INP001", "I001", "ERA001"]
 "tests/*.py" = ["S101"]
 "models.py" = ["A003"]
+"exception_handlers.py" = ["ARG001"]
 
 [tool.ruff.flake8-bugbear]
 extend-immutable-calls=[

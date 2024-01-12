@@ -1,23 +1,38 @@
-from pathlib import Path
+from collections import defaultdict
+from collections.abc import Callable
+from functools import reduce
+from operator import getitem
+from typing import Any, Literal, TypeAlias
 
-from babel.support import Translations
+from src.context import locale_ctx
+from src.utils.openapi import translations
+from src.utils.singleton import singleton
 
-from src.config import PROJECT_DIR
-
-ACCEPTED_LANGUAGES = ("zh_CN", "en_US")
-
-TRANSITIONS = {
-    "zh_CN": Translations.load(Path(f"{PROJECT_DIR}/locales"), locales=["zh_CN"]),
-    "en_US": Translations.load(Path(f"{PROJECT_DIR}/locales"), locales=["en_US"]),
-}
-
-translations = TRANSITIONS.get("en_US")
+ACCEPTED_LANGUAGES: TypeAlias = Literal["en_US", "zh_CN"]
 
 
-def set_locale(locale: str) -> None:
-    global translations  # noqa: PLW0603
-    translations = TRANSITIONS.get(locale) or TRANSITIONS.get("en_US")
+@singleton
+class I18n:
+    def __init__(self) -> None:
+        self.translations = translations
+
+    def gettext(self, path: str, **kwargs: Any) -> dict | str:
+        locale = locale_ctx.get()
+        founded: dict | str = self._find(locale, path)
+
+        if len(kwargs) > 0 and isinstance(founded, str):
+            try:
+                return founded.format_map(defaultdict(str, **kwargs))
+            except KeyError:
+                return founded
+        return founded
+
+    def _find(self, language: ACCEPTED_LANGUAGES, path: str) -> dict | str:
+        try:
+            return reduce(getitem, path.split("."), self.locales[language])
+        except (KeyError, TypeError):
+            return f"missing translation for {language}"
 
 
-def _(msg: str) -> str:
-    return translations.ugettext(msg)
+_i18n: I18n = I18n()
+_: Callable[..., dict | str] = _i18n.gettext
