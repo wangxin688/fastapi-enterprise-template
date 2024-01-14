@@ -1,21 +1,19 @@
-from typing import ClassVar
+from typing import Any, ClassVar
 from uuid import UUID
 
-from sqlalchemy import ForeignKey
-from sqlalchemy.orm import DeclarativeBase, Mapped, declared_attr, mapped_column
+from fastapi.encoders import jsonable_encoder
+from sqlalchemy.orm import DeclarativeBase
 
-from src.context import tenant_ctx
 from src.db._types import GUID
 
 
 class Base(DeclarativeBase):
-    __multi_tenant__: bool = True
+    __visible_name__: ClassVar = {}
     __search_fields__: ClassVar = set()
     type_annotation_map: ClassVar = {UUID: GUID}
 
-    @declared_attr
-    @classmethod
-    def tenant_id(cls) -> Mapped[UUID]:
-        if not cls.__multi_tenant__:
-            return None
-        return mapped_column(UUID, ForeignKey("tenant.id", ondelete="CASCADE"), index=True, default=tenant_ctx.get)
+    def dict(self, exclude: set[str] | None = None, native_dict: bool = False) -> dict[str, Any]:
+        """Return dict representation of model."""
+        if not native_dict:
+            return jsonable_encoder(self, exclude=exclude)
+        return {c.name: getattr(self, c.name) for c in self.__table__.columns if c.name not in exclude}

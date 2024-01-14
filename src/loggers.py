@@ -1,5 +1,4 @@
 import logging
-from collections.abc import Hashable
 from logging import LogRecord, setLogRecordFactory
 from logging.config import dictConfig
 
@@ -48,7 +47,7 @@ LOGGING = {
 }
 
 
-def configure_logger(config: Hashable | None = None) -> None:
+def configure_logger(config: dict | None = None) -> None:
     if config is None:
         config = LOGGING
     dictConfig(config)

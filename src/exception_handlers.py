@@ -16,7 +16,7 @@ _E = NewType("_E", Exception)
 logger = logging.getLogger(__name__)
 
 
-def log_exception(exc: _E, logger_trace_info: bool) -> None:
+def log_exception(exc: _E | Exception, logger_trace_info: bool) -> None:
     ex_type, _tmp, ex_traceback = sys.exc_info
     trace_back = traceback.format_list(traceback.extract_tb(ex_traceback)[-1:])[-1]
     logger.warning("ErrorMessage: %s" % str(exc))
@@ -32,7 +32,7 @@ def default_exception_handler(request: Request, exc: Exception) -> JSONResponse:
     return JSONResponse(
         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
         content=BaseResponse(
-            ERR_500.code, data=jsonable_encoder(str(exc)), message=_(ERR_500.message, request_id_ctx.get())
+            code=ERR_500.code, data=jsonable_encoder(str(exc)), message=_(ERR_500.message, request_id_ctx.get())
         ),
     )
 

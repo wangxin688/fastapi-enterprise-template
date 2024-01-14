@@ -2,7 +2,7 @@ import uuid
 from datetime import date, datetime
 from typing import Annotated, Any
 
-from sqlalchemy import CHAR, Boolean, Date, DateTime, Dialect, String, func, type_coerce
+from sqlalchemy import CHAR, Boolean, Date, DateTime, Dialect, Integer, String, func, type_coerce
 from sqlalchemy.dialects.postgresql import BYTEA, UUID
 from sqlalchemy.orm import mapped_column
 from sqlalchemy.sql import expression
@@ -63,7 +63,7 @@ class GUID(TypeDecorator):
         return value
 
 
-uuid_pk = Annotated[uuid.UUID, mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)]
+int_pk = Annotated[int, mapped_column(Integer, primary_key=True)]
 bool_true = Annotated[bool, mapped_column(Boolean, server_default=expression.true())]
 bool_false = Annotated[bool, mapped_column(Boolean, server_default=expression.false())]
 datetime_required = Annotated[datetime, mapped_column(DateTime(timezone=True))]

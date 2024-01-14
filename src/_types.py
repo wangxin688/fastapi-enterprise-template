@@ -1,6 +1,5 @@
 from enum import Enum
-from typing import Annotated, Generic, Literal, ParamSpec, TypeVar
-from uuid import UUID
+from typing import Annotated, Generic, Literal, ParamSpec, TypeAlias, TypeVar
 
 import pydantic
 from fastapi import Query
@@ -11,6 +10,8 @@ from src.validators import items_to_list, mac_address_validator
 
 T = TypeVar("T")
 P = ParamSpec("P")
+
+Order: TypeAlias = Literal["descend", "ascend"]
 
 StrList = Annotated[str | list[str], BeforeValidator(items_to_list)]
 IntList = Annotated[int | list[int], BeforeValidator(items_to_list)]
@@ -53,17 +54,17 @@ class QueryParams(BaseModel):
     limit: int | None = Query(default=20, ge=0, le=1000, description="Number of results to return per request.")
     offset: int | None = Query(default=0, ge=0, description="The initial index from which return the results.")
     q: str | None = Query(default=None, description="Search for results.")
-    id: list[UUID] | None = Field(Query(default=[], description="request object unique ID"))
+    id: list[int] | None = Field(Query(default=[], description="request object unique ID"))
     order_by: str | None = Query(default=None, description="Which field to use when order the results")
-    order: Literal["descend", "ascend"] | None = Query(default="ascend", description="Order by dscend or ascend")
+    order: Order | None = Query(default="ascend", description="Order by dscend or ascend")
 
 
 class BatchDelete(BaseModel):
-    ids: list[UUID]
+    ids: list[int]
 
 
 class BatchUpdate(BaseModel):
-    ids: list[UUID]
+    ids: list[int]
 
 
 class I18nField(BaseModel):

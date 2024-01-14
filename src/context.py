@@ -2,7 +2,6 @@ from contextvars import ContextVar
 from uuid import UUID
 
 request_id_ctx = ContextVar[str | None] = ContextVar("x-request-id", default=None)
-tenant_ctx = ContextVar[UUID | None] = ContextVar("x-tenant-id", default=None)
 auth_user_ctx = ContextVar[UUID | None] = ContextVar("x-auth-user", default=None)
 locale_ctx = ContextVar[UUID | None] = ContextVar("Accept-Language", default="en")
 orm_diff_ctx = ContextVar[dict | None] = ContextVar("x-orm-diff", default=None)

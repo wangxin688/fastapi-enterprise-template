@@ -37,6 +37,7 @@ dev-dependencies = [
     "pytest-cov>=4.1.0",
     "pytest-asyncio>=0.23.3",
     "black>=23.12.1",
+    "mypy>=1.8.0",
 ]
 
 [tool.hatch.metadata]
@@ -52,7 +53,7 @@ target-version = "py311"
 
 [tool.ruff.lint]
 select = ["ALL"]
-ignore = ["D", "G002", "DTZ003", "ANN401", "ANN101", "ANN102", "EM101", "PD901", "COM812", "ISC001", "FBT001"]
+ignore = ["D", "G002", "DTZ003", "ANN401", "ANN101", "ANN102", "EM101", "PD901", "COM812", "ISC001", "FBT"]
 fixable = ["ALL"]
 
 
@@ -60,6 +61,7 @@ fixable = ["ALL"]
 "env.py" = ["INP001", "I001", "ERA001"]
 "tests/*.py" = ["S101"]
 "models.py" = ["A003"]
+"mixins.py" = ["A003"]
 "exception_handlers.py" = ["ARG001"]
 
 [tool.ruff.flake8-bugbear]
