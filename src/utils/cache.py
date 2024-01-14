@@ -5,7 +5,7 @@ from collections import OrderedDict
 from collections.abc import AsyncGenerator, Awaitable, Callable, Mapping
 from datetime import datetime
 from enum import IntEnum
-from functools import wraps
+from functools import partial, update_wrapper, wraps
 from hashlib import md5
 from inspect import Parameter, Signature, signature
 from typing import Any, NewType, TypeAlias, get_type_hints
@@ -213,3 +213,10 @@ def cache(*, expire: int | None = 600):  # noqa: ANN201
         return inner
 
     return outer
+
+
+cache_one_hour = partial(cache, expire=3600)
+cache_one_day = partial(cache, expire=86400)
+
+update_wrapper(cache_one_day, cache)
+update_wrapper(cache_one_hour, cache)
