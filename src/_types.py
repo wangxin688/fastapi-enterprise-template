@@ -10,6 +10,7 @@ from src.validators import items_to_list, mac_address_validator
 
 T = TypeVar("T")
 P = ParamSpec("P")
+R = TypeVar("R")
 
 Order: TypeAlias = Literal["descend", "ascend"]
 
