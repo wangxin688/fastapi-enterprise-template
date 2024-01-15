@@ -1,6 +1,7 @@
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
+import redis.asyncio as aioreids
 import sentry_sdk
 from fastapi import FastAPI
 from starlette.middleware.cors import CORSMiddleware
@@ -13,12 +14,18 @@ from src.exceptions import sentry_ignore_errors
 from src.middlewares import RequestMiddleware
 from src.openapi import openapi_description
 from src.routers import router
+from src.utils import cache
 
 
 def create_app() -> FastAPI:
     @asynccontextmanager
-    def lifespan(app: FastAPI) -> AsyncIterator[None]:  # noqa: ARG001
-        ...
+    async def lifespan(app: FastAPI) -> AsyncIterator[None]:  # noqa: ARG001
+        pool = aioreids.ConnectionPool.from_url(
+            settings.REDIS_DSN, encoding="utf-8", db=cache.RedisDBType.DEFAULT, decode_response=True
+        )
+        cache.redis_client = cache.FastapiCache(connection_pool=pool)
+        yield
+        await pool.disconnect()
 
     if settings.ENV == Env.PRD.name:  # noqa: SIM300
         sentry_sdk.init(

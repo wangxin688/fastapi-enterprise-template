@@ -2,7 +2,7 @@ import asyncio
 import json
 import logging
 from collections import OrderedDict
-from collections.abc import AsyncGenerator, Awaitable, Callable, Mapping
+from collections.abc import Awaitable, Callable, Mapping
 from datetime import datetime
 from enum import IntEnum
 from functools import partial, update_wrapper, wraps
@@ -16,14 +16,12 @@ from fastapi import Request, Response
 from fastapi.concurrency import run_in_threadpool
 from httpx import AsyncClient, Client
 from pydantic import BaseModel
-from redis import ConnectionError, Redis
+from redis import Redis
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session
 
-from src._types import P, R
+from src._types import AppStrEnum, P, R
 from src.auth.models import User
-from src.config import settings
-from src.utils.singleton import singleton
 
 DEFAULT_CACHE_HEADER = "X-Cache"
 logger = logging.getLogger(__name__)
@@ -38,7 +36,11 @@ class RedisDBType(IntEnum):
     DEFAULT = 0
     CELERY = 1
     PUBSUB = 2
-    FASTAPI_CACHE = 3
+
+
+class CacheNamespace(AppStrEnum):
+    API_CACHE = "api_"
+    NORMAL_CACHE = "nc_"
 
 
 class RedisStatus(IntEnum):
@@ -65,24 +67,18 @@ def default(obj: Any) -> Any:
     return None
 
 
-class RedisCache(redis.Redis):
-    def __int__(self, db: int = 0, dsn: str = settings.REDIS_DSN) -> None:
-        super().__init__()
-        self._redis = self._connect(db, dsn)
+class FastapiCache(redis.Redis):
+    response_header: str = DEFAULT_CACHE_HEADER
+    ignore_arg_types: list[ArgType] = ALWAYS_IGNORE_ARG_TYPES
 
-    @staticmethod
-    def _connect(db: int, dsn: str) -> "Redis":
-        pool = redis.ConnectionPool.from_url(dsn, encoding="utf-8", db=db, decode_response=True)
-        return redis.Redis.from_pool(pool)
+    async def set_ex(self, name: str, value: Any, expire: int = 1800, namespace: CacheNamespace | None = None) -> Any:
+        return self.setex(name=namespace + name, time=expire, value=json.dumps(value))
 
-    async def setex(self, name: str, value: Any, expire: int = 1800) -> Any:
-        return await self._redis.setex(name=name, time=expire, value=json.dumps(value, default=default))
+    async def set_nx(self, name: str, value: Any, namespace: CacheNamespace | None = None) -> Any:
+        return await self.setnx(name=namespace + name, value=json.dumps(value, default=default))
 
-    async def setnx(self, name: str, value: Any) -> Any:
-        return await self._redis.setnx(name=name, value=json.dumps(value, default=default))
-
-    async def get(self, name: str) -> Any:
-        result = await self._redis.get(name=name)
+    async def get_cache(self, name: str, namespace: CacheNamespace | None = None) -> Any:
+        result = await self.get(name=namespace + name)
         if result:
             return json.loads(result)
         return None
@@ -96,19 +92,6 @@ class RedisCache(redis.Redis):
         if value:
             message += f", value={value}"
         logger.info(message)
-
-
-@singleton
-class FastApiRedisCache(RedisCache):
-    def __int__(
-        self,
-        db: int = RedisDBType.FASTAPI_CACHE.value,
-        response_header: str | None = DEFAULT_CACHE_HEADER,
-        ignore_arg_types: list[ArgType] | None = None,
-    ) -> None:
-        self.response_header = response_header
-        self.ignore_arg_types = ignore_arg_types
-        super().__int__(db)
 
     @staticmethod
     def request_is_not_cacheable(request: Request) -> bool:
@@ -128,7 +111,7 @@ class FastApiRedisCache(RedisCache):
             message = f"Object of type {type(value)} is not JSON-serializable"
             self.log(RedisEvent.FAILED_TO_CACHE_KEY, mes=message, name=name, value=value)
             return False
-        cached = await self.setex(name, response_data, expire)
+        cached = await self.setex(name, response_data, expire, CacheNamespace.API_CACHE)
         if cached:
             self.log(event=RedisEvent.KEY_ADDED_TO_CACHE, name=name)
         else:
@@ -137,7 +120,7 @@ class FastApiRedisCache(RedisCache):
 
     async def check_cache(self, name: str) -> tuple[int, str]:
         pipe = self._redis.pipeline()
-        pipe.ttl(name).get(name)
+        pipe.ttl(CacheNamespace.API_CACHE + name).get(CacheNamespace.API_CACHE + name)
         ttl, in_cache = await pipe.execute()
         return ttl, json.loads(in_cache) if in_cache else None
 
@@ -146,14 +129,7 @@ class FastApiRedisCache(RedisCache):
         response.headers[self.response_header + "-TTL"] = f"max-age-{ttl}"
 
 
-async def get_default_redis_client() -> AsyncGenerator[RedisCache, None]:
-    try:
-        redis = RedisCache(db=RedisDBType.DEFAULT)
-        yield redis
-    except ConnectionError:  # noqa: TRY302
-        raise
-    finally:
-        await redis.aclose()
+redis_client: FastapiCache = None
 
 
 def _get_cache_key(func: Callable, *args: P.args, **kwargs: P.kwargs) -> str:
@@ -195,19 +171,18 @@ def cache(*, expire: int | None = 600):  # noqa: ANN201
             create_response_directly = not response
             if create_response_directly:
                 response = Response()
-            fastapi_cache = FastApiRedisCache()
-            if fastapi_cache.request_is_not_cacheable(request):
+            if redis_client.request_is_not_cacheable(request):
                 result = await _get_api_response_async(func, *args, **kwargs)
             key = _get_cache_key(func, *args, **kwargs)
-            ttl, in_cache = await fastapi_cache.check_cache(key)
+            ttl, in_cache = await redis_client.check_cache(key)
             if in_cache:
-                fastapi_cache.set_response_headers(response, True, ttl)
+                redis_client.set_response_headers(response, True, ttl)
                 result = in_cache
             else:
                 result = await _get_api_response_async(func, *args, **kwargs)
-                cached = await fastapi_cache.add_to_cache(key, result, expire)
+                cached = await redis_client.add_to_cache(key, result, expire)
                 if cached:
-                    fastapi_cache.set_response_headers(response, cache_hit=False, ttl=ttl)
+                    redis_client.set_response_headers(response, cache_hit=False, ttl=ttl)
             return result
 
         return inner
