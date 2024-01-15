@@ -20,6 +20,7 @@ dependencies = [
     "httpx>=0.26.0",
     "pydantic_extra_types>=2.4.1",
     "phonenumbers>=8.13.27",
+    "asyncpg>=0.29.0",
 ]
 readme = "README.md"
 requires-python = ">= 3.11"

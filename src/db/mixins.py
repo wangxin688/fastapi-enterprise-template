@@ -1,9 +1,8 @@
 from datetime import datetime
 from typing import TYPE_CHECKING
-from uuid import UUID
 
 from fastapi.encoders import jsonable_encoder
-from sqlalchemy import DateTime, ForeignKey, String, event, func, insert, inspect
+from sqlalchemy import DateTime, ForeignKey, Integer, String, event, func, insert, inspect
 from sqlalchemy.dialects.postgresql import JSON
 from sqlalchemy.engine import Connection
 from sqlalchemy.ext.declarative import declared_attr
@@ -11,7 +10,7 @@ from sqlalchemy.orm import Mapped, Mapper, class_mapper, mapped_column, relation
 from sqlalchemy.orm.attributes import get_history
 
 from src.context import auth_user_ctx, orm_diff_ctx, request_id_ctx
-from src.db._types import GUID, uuid_pk
+from src.db._types import GUID, int_pk
 from src.db.base import Base
 
 if TYPE_CHECKING:
@@ -43,7 +42,7 @@ def get_object_change(obj: Mapper) -> dict:
 
 
 class AuditLog:
-    id: Mapped[uuid_pk]
+    id: Mapped[int_pk]
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=func.now())
     request_id: Mapped[str]
     action: Mapped[str] = mapped_column(String, nullable=False)
@@ -52,9 +51,9 @@ class AuditLog:
 
     @declared_attr
     @classmethod
-    def user_id(cls) -> Mapped[UUID | None]:
+    def user_id(cls) -> Mapped[int | None]:
         return mapped_column(
-            GUID,
+            Integer,
             ForeignKey("auth_user.id", ondelete="SET NULL"),
             default=auth_user_ctx.get,
             nullable=True,
@@ -62,7 +61,7 @@ class AuditLog:
 
     @declared_attr
     @classmethod
-    def user(cls) -> Mapped["User" | None]:
+    def user(cls) -> Mapped["User"]:
         return relationship("User", lazy="selectin")
 
 
@@ -75,7 +74,6 @@ class AuditLogMixin:
             (AuditLog, Base),
             {
                 "__tablename__": f"{cls.__tablename__}_audit_log",
-                "__multi_tenant__": False,
                 "parent_id": mapped_column(
                     GUID,
                     ForeignKey(f"{cls.__tablename__}.id", ondelete="SET NULL"),
@@ -138,17 +136,17 @@ class AuditLogMixin:
 class AuditUserMixin:
     @declared_attr
     @classmethod
-    def created_by_fk(cls) -> Mapped[UUID | None]:
-        return mapped_column(GUID, ForeignKey("auth_user.id"), default=auth_user_ctx.get, nullable=True)
+    def created_by_fk(cls) -> Mapped[int | None]:
+        return mapped_column(Integer, ForeignKey("auth_user.id"), default=auth_user_ctx.get, nullable=True)
 
     @declared_attr
     @classmethod
-    def updated_by_fk(cls) -> Mapped[UUID | None]:
-        return mapped_column(GUID, ForeignKey("auth_user.id"), default=auth_user_ctx.get, nullable=True)
+    def updated_by_fk(cls) -> Mapped[int | None]:
+        return mapped_column(Integer, ForeignKey("auth_user.id"), default=auth_user_ctx.get, nullable=True)
 
     @declared_attr
     @classmethod
-    def created_by(cls) -> Mapped["User" | None]:
+    def created_by(cls) -> Mapped["User"]:
         return relationship(
             "User",
             foreign_keys=[cls.created_by_fk],
@@ -159,7 +157,7 @@ class AuditUserMixin:
 
     @declared_attr
     @classmethod
-    def updated_by(cls) -> Mapped["User" | None]:
+    def updated_by(cls) -> Mapped["User"]:
         return relationship(
             "User",
             foreign_keys=[cls.updated_by_fk],
