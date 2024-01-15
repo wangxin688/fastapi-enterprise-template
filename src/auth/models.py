@@ -8,6 +8,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.db import _types
 from src.db.base import Base
+from src.db.mixins import AuditTimeMixin
 
 
 class RolePermission(Base):
@@ -16,11 +17,12 @@ class RolePermission(Base):
     permission_id: Mapped[int] = mapped_column(ForeignKey("permission.id"), primary_key=True)
 
 
-class Role(Base):
+class Role(Base, AuditTimeMixin):
     __tablename__ = "role"
     __search_fields__: ClassVar = {"name"}
     id: Mapped[_types.int_pk]
     name: Mapped[str]
+    description: Mapped[str | None]
     permission: Mapped[list["Permission"]] = relationship(secondary=RolePermission, backref="role")
 
 
@@ -33,16 +35,17 @@ class Permission(Base):
     tag: Mapped[str]
 
 
-class Group(Base):
+class Group(Base, AuditTimeMixin):
     __tablename__ = "group"
     __search_fields__: ClassVar = {"name"}
     id: Mapped[_types.int_pk]
     name: Mapped[str]
+    description: Mapped[str | None]
     role_id: Mapped[int] = mapped_column(ForeignKey(Role.id, ondelete="CASCADE"))
     role: Mapped["Role"] = relationship(backref="group", passive_deletes=True)
 
 
-class User(Base):
+class User(Base, AuditTimeMixin):
     __tablename__ = "user"
     __search_fields__: ClassVar = {"email", "name", "phone"}
     id: Mapped[_types.int_pk]

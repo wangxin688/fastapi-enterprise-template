@@ -1,3 +1,4 @@
+from datetime import datetime
 from enum import Enum
 from typing import Annotated, Generic, Literal, ParamSpec, TypeAlias, TypeVar
 
@@ -23,6 +24,11 @@ NameChineseStr = constr(pattern="^[\u4e00-\u9fa5a-zA-Z0-9_-].$", max_length=50)
 
 class BaseModel(pydantic.BaseModel):
     model_config = ConfigDict(from_attributes=True)
+
+
+class AuditTimeBase(BaseModel):
+    created_at: datetime
+    updated_at: datetime | None = None
 
 
 class BaseResponse(BaseModel, Generic[T]):
