@@ -48,7 +48,7 @@ def create_app() -> FastAPI:
     )
     app.include_router(router, prefix="/api")
     for handler in exception_handlers:
-        app.add_exception_handler(exc_class_or_status_code=handler["name"], handler=handler[handler])
+        app.add_exception_handler(exc_class_or_status_code=handler["exception"], handler=handler["handler"])
     app.add_middleware(RequestMiddleware)
     app.add_middleware(ServerErrorMiddleware, handler=default_exception_handler)
     app.add_middleware(

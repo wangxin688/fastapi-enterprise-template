@@ -65,6 +65,8 @@ fixable = ["ALL"]
 "env.py" = ["INP001", "I001", "ERA001"]
 "tests/*.py" = ["S101"]
 "exception_handlers.py" = ["ARG001"]
+"models.py" = ["RUF012"]
+"api.py" = ["A002"]
 
 [tool.ruff.flake8-bugbear]
 extend-immutable-calls=[
@@ -73,6 +75,7 @@ extend-immutable-calls=[
     "fastapi.params_functions.Form",
     "fastapi.File",
     "fastapi.Path",
+    "fastapi.params.Depends",
 ]
 
 [tool.black]

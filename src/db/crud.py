@@ -7,6 +7,7 @@ from sqlalchemy.dialects.postgresql import ARRAY, HSTORE, INET, JSON, JSONB, MAC
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.ext.mutable import Mutable
 from sqlalchemy.orm import undefer
+from sqlalchemy.sql.base import ExecutableOption
 
 from src._types import Order, QueryParams
 from src.context import locale_ctx
@@ -128,8 +129,10 @@ class DtoBase(Generic[ModelT, CreateSchemaType, UpdateSchemaType, QuerySchemaTyp
                 stmt = stmt.where(getattr(self.model, key).is_(value))
             elif isinstance(value, list):
                 if value:
-                    if key == "name" and type(getattr(self.model, key).type) is HSTORE:
-                        stmt = stmt.where(or_(self.model.name["zh_CN"].in_(value), self.model.name["en_US"].in_(value)))
+                    if key in self.model.__i18n_files__ and type(getattr(self.model, key).type) is HSTORE:
+                        stmt = stmt.where(
+                            or_(getattr(self.model)["zh_CN"].in_(value), getattr(self.model)["zh_CN"].in_(value))
+                        )
                     else:
                         stmt = stmt.where(getattr(self.model, key).in_(value))
                 else:
@@ -140,7 +143,9 @@ class DtoBase(Generic[ModelT, CreateSchemaType, UpdateSchemaType, QuerySchemaTyp
                 stmt = stmt.where(getattr(self.model, key) == value)
         return stmt
 
-    def _apply_selectinload(self, stmt: Select[tuple[ModelT]], options: tuple | None = None) -> Select[tuple[ModelT]]:
+    def _apply_selectinload(
+        self, stmt: Select[tuple[ModelT]], options: tuple[ExecutableOption] | None = None
+    ) -> Select[tuple[ModelT]]:
         if options:
             stmt = stmt.options(*options)
         if self.undefer_load:
@@ -329,7 +334,9 @@ class DtoBase(Generic[ModelT, CreateSchemaType, UpdateSchemaType, QuerySchemaTyp
                 getattr(obj, fk_name).append(target_obj)
         return obj
 
-    async def get_one_or_404(self, session: AsyncSession, pk_id: int, options: tuple | None) -> ModelT:
+    async def get_one_or_404(
+        self, session: AsyncSession, pk_id: int, options: tuple[ExecutableOption] | None
+    ) -> ModelT:
         stmt = self._get_base_stmt()
         if options:
             stmt = self._apply_selectinload(options)

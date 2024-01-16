@@ -47,6 +47,7 @@ class GroupBrief(BaseModel):
 
 class RoleBase(BaseModel):
     name: str
+    slug: str
     description: str
 
 

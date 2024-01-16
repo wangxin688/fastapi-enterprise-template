@@ -41,6 +41,7 @@ class RedisDBType(IntEnum):
 class CacheNamespace(AppStrEnum):
     API_CACHE = "api_"
     NORMAL_CACHE = "nc_"
+    ROLE_CACHE = "role_"
 
 
 class RedisStatus(IntEnum):

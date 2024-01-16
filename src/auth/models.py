@@ -1,5 +1,6 @@
 from datetime import datetime
 from typing import ClassVar
+from uuid import UUID
 
 from sqlalchemy import DateTime, ForeignKey
 from sqlalchemy.dialects.postgresql import JSON
@@ -14,21 +15,24 @@ from src.db.mixins import AuditTimeMixin
 class RolePermission(Base):
     __tablename__ = "role_permission"
     role_id: Mapped[int] = mapped_column(ForeignKey("role.id"), primary_key=True)
-    permission_id: Mapped[int] = mapped_column(ForeignKey("permission.id"), primary_key=True)
+    permission_id: Mapped[UUID] = mapped_column(ForeignKey("permission.id"), primary_key=True)
 
 
 class Role(Base, AuditTimeMixin):
     __tablename__ = "role"
     __search_fields__: ClassVar = {"name"}
+    __visible_name__ = {"en_US": "Role", "zh_CN": "用户角色"}
     id: Mapped[_types.int_pk]
     name: Mapped[str]
+    slug: Mapped[str]
     description: Mapped[str | None]
     permission: Mapped[list["Permission"]] = relationship(secondary=RolePermission, backref="role")
 
 
 class Permission(Base):
     __tablename__ = "permission"
-    id: Mapped[_types.int_pk]
+    __visible_name__ = {"en_US": "Permission", "zh_CN": "权限"}
+    id: Mapped[_types.uuid_pk]
     name: Mapped[str]
     url: Mapped[str]
     method: Mapped[str]
@@ -38,6 +42,7 @@ class Permission(Base):
 class Group(Base, AuditTimeMixin):
     __tablename__ = "group"
     __search_fields__: ClassVar = {"name"}
+    __visible_name__ = {"en_US": "Group", "zh_CN": "用户组"}
     id: Mapped[_types.int_pk]
     name: Mapped[str]
     description: Mapped[str | None]
@@ -48,6 +53,7 @@ class Group(Base, AuditTimeMixin):
 class User(Base, AuditTimeMixin):
     __tablename__ = "user"
     __search_fields__: ClassVar = {"email", "name", "phone"}
+    __visible_name__ = {"en_US": "User", "zh_CN": "用户"}
     id: Mapped[_types.int_pk]
     name: Mapped[str]
     email: Mapped[str | None] = mapped_column(unique=True)

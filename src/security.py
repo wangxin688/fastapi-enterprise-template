@@ -18,15 +18,17 @@ PWD_CONTEXT = CryptContext(
     bcrypt__rounds=settings.SECURITY_BCRYPT_ROUNDS,
 )
 
+API_WHITE_LISTS: set[str] = {}
+
 
 class JwtTokenPayload(BaseModel):
-    sub: str | int
+    sub: int
     refresh: bool
     issued_at: datetime
     expires_at: datetime
 
 
-def create_jwt_token(subject: UUID, expire_seconds: int, refresh: bool) -> tuple[str, int, int]:
+def create_jwt_token(subject: int, expire_seconds: int, refresh: bool) -> tuple[str, int, int]:
     """Create jwt access token or refresh token for use
 
     Args:

@@ -63,6 +63,7 @@ class GUID(TypeDecorator):
         return value
 
 
+uuid_pk = Annotated[UUID, mapped_column(GUID, primary_key=True)]
 int_pk = Annotated[int, mapped_column(Integer, primary_key=True)]
 bool_true = Annotated[bool, mapped_column(Boolean, server_default=expression.true())]
 bool_false = Annotated[bool, mapped_column(Boolean, server_default=expression.false())]

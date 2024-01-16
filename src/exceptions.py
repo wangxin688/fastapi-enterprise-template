@@ -1,7 +1,10 @@
 from ipaddress import UUID, IPv4Address, IPv4Interface, IPv4Network, IPv6Address, IPv6Interface, IPv6Network
 from typing import Any
 
+from fastapi import status
+
 from src.context import locale_ctx
+from src.errors import ErrorCode
 
 
 def error_message_value_handler(value: Any) -> Any:
@@ -14,7 +17,7 @@ def error_message_value_handler(value: Any) -> Any:
     return value
 
 
-class TokenNotProvideError(Exception):
+class TokenInvalidForRefreshError(Exception):
     ...
 
 
@@ -50,10 +53,25 @@ class ExistError(Exception):
         return f"Object:{self.name} with field:{self.field}-value:{self.value} already exist."
 
 
+class GenerError(Exception):
+    def __init__(
+        self,
+        error: ErrorCode,
+        params: dict[str, Any] | None = None,
+        status_code: int | None = status.HTTP_400_BAD_REQUEST,
+    ) -> None:
+        self.error = error
+        self.params = params
+        self.status_code = status_code
+
+    def __repr__(self) -> str:
+        return f"Gener Error Occurred: ErrCode: {self.error.error}, Message: {self.error.message}"
+
+
 sentry_ignore_errors = [
     TokenExpireError,
     TokenInvalidError,
-    TokenNotProvideError,
+    TokenInvalidForRefreshError,
     PermissionDenyError,
     NotFoundError,
     ExistError,

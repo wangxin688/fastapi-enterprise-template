@@ -1,6 +1,6 @@
 from datetime import datetime
 from enum import Enum
-from typing import Annotated, Generic, Literal, ParamSpec, TypeAlias, TypeVar
+from typing import Annotated, Generic, Literal, ParamSpec, TypeAlias, TypedDict, TypeVar
 
 import pydantic
 from fastapi import Query
@@ -77,3 +77,8 @@ class BatchUpdate(BaseModel):
 class I18nField(BaseModel):
     en_US: str  # noqa: N815
     zh_CN: str  # noqa: N815
+
+
+class VisibleName(TypedDict, total=True):
+    en_US: str
+    zh_CN: str
