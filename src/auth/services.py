@@ -4,7 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.auth import schemas
 from src.auth.models import Group, Role, User
-from src.db.crud import DtoBase
+from src.db.dtobase import DtoBase
 
 
 class UserDto(DtoBase[User, schemas.UserCreate, schemas.UserUpdate, schemas.UserQuery]):
