@@ -73,3 +73,7 @@ Group.user_count: int = column_property(
     select(func.count(User.id)).where(User.group_id == Group.id).correlate_except(Group).subquery(),
     deferred=True,
 )
+Role.permission_count = column_property(
+    select(func.count(Permission.id)).where(Permission.role_id == Role.id).correlate_except(Role).subquery(),
+    deferred=True,
+)

@@ -1,4 +1,5 @@
 from datetime import datetime
+from uuid import UUID
 
 from pydantic import EmailStr
 from pydantic_extra_types.phone_numbers import PhoneNumber
@@ -68,7 +69,7 @@ class GroupCreate(GroupBase):
 
 
 class RoleCreate(RoleBase):
-    permission_ids: list[int] | None = None
+    permission_ids: list[UUID] | None = None
 
 
 class UserUpdate(UserCreate):
@@ -102,6 +103,11 @@ class GroupDetail(GroupBase, AuditTimeBase):
 class RoleDetail(RoleBase, AuditTimeBase):
     id: int
     permission: list[Permission]
+
+
+class RoleList(RoleBase, AuditTimeBase):
+    id: int
+    permission_count: int
 
 
 class UserQuery(QueryParams):
