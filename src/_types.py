@@ -31,21 +31,14 @@ class AuditTimeBase(BaseModel):
     updated_at: datetime | None = None
 
 
-class BaseResponse(BaseModel, Generic[T]):
-    code: int | None = 0
-    data: T | None = None
-    message: str | None = "success"
-
+class ResultT(BaseModel):
+    id: T
+    message: str = "success"
+    
 
 class ListT(BaseModel, Generic[T]):
     count: int
     results: T | None = None
-
-
-class BaseListResponse(BaseModel, Generic[T]):
-    code: int | None = 0
-    data: ListT
-    message: str | None = "success"
 
 
 class AppStrEnum(str, Enum):
