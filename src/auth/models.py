@@ -2,10 +2,10 @@ from datetime import datetime
 from typing import ClassVar
 from uuid import UUID
 
-from sqlalchemy import DateTime, ForeignKey
+from sqlalchemy import DateTime, ForeignKey, func, select
 from sqlalchemy.dialects.postgresql import JSON
 from sqlalchemy.ext.mutable import MutableDict
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy.orm import Mapped, column_property, mapped_column, relationship
 
 from src.db import _types
 from src.db.base import Base
@@ -48,6 +48,7 @@ class Group(Base, AuditTimeMixin):
     description: Mapped[str | None]
     role_id: Mapped[int] = mapped_column(ForeignKey(Role.id, ondelete="CASCADE"))
     role: Mapped["Role"] = relationship(backref="group", passive_deletes=True)
+    user: Mapped[list["User"]] = relationship(back_populates="group")
 
 
 class User(Base, AuditTimeMixin):
@@ -62,7 +63,13 @@ class User(Base, AuditTimeMixin):
     avatar: Mapped[str | None]
     last_login: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     group_id: Mapped[int] = mapped_column(ForeignKey(Group.id, ondelete="CASCADE"))
-    group: Mapped["Group"] = relationship(backref="user", passive_deletes=True)
+    group: Mapped["Group"] = relationship(back_populates="user", passive_deletes=True)
     role_id: Mapped[int] = mapped_column(ForeignKey(Role.id, ondelete="CASCADE"))
     role: Mapped["Role"] = relationship(backref="user", passive_deletes=True)
     auth_info: Mapped[dict] = mapped_column(MutableDict.as_mutable(JSON))
+
+
+Group.user_count: int = column_property(
+    select(func.count(User.id)).where(User.group_id == Group.id).correlate_except(Group).subquery(),
+    deferred=True,
+)

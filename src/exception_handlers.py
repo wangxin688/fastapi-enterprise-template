@@ -14,20 +14,37 @@ _E = NewType("_E", Exception)
 logger = logging.getLogger(__name__)
 
 
-def log_exception(exc: _E | Exception, logger_trace_info: bool) -> None:
-    ex_type, _tmp, ex_traceback = sys.exc_info
+def log_exception(exc: type[BaseException] | Exception, logger_trace_info: bool) -> None:
+    """
+    Logs an exception.
+
+    Args:
+        exc (Type[BaseException] | Exception): The exception to be logged.
+        logger_trace_info (bool): Indicates whether to include detailed trace information in the log.
+
+    Returns:
+        None
+
+    Raises:
+        N/A
+    """
+    logger = logging.getLogger(__name__)
+    ex_type, _, ex_traceback = sys.exc_info()
     trace_back = traceback.format_list(traceback.extract_tb(ex_traceback)[-1:])[-1]
-    logger.warning("ErrorMessage: %s" % str(exc))
-    logger.warning("Exception Type %s: " % ex_type.__name__)
+
+    logger.warning(f"ErrorMessage: {exc!s}")
+    logger.warning(f"Exception Type {ex_type.__name__}: ")
+
     if not logger_trace_info:
-        logger.warning("Stack trace: %s" % trace_back)
+        logger.warning(f"Stack trace: {trace_back}")
     else:
-        logger.exception("Stace trace: %s" % trace_back)
+        logger.exception(f"Stack trace: {trace_back}")
 
 
 async def token_invalid_handler(request: Request, exc: exceptions.TokenInvalidError) -> JSONResponse:
     log_exception(exc, False)
-    return JSONResponse(status_code=status.HTTP_401_UNAUTHORIZED, content=errors.ERR_10002.dict())
+    response_content = errors.ERR_10002.dict()
+    return JSONResponse(status_code=status.HTTP_401_UNAUTHORIZED, content=response_content)
 
 
 async def invalid_token_for_refresh_handler(
@@ -49,24 +66,16 @@ async def permission_deny_handler(request: Request, exc: exceptions.PermissionDe
 
 async def resource_not_found_handler(request: Request, exc: exceptions.NotFoundError) -> JSONResponse:
     log_exception(exc, True)
-    return JSONResponse(
-        status_code=status.HTTP_404_NOT_FOUND,
-        content={
-            "error": errors.ERR_404.error,
-            "message": _(errors.ERR_404.message, name=exc.name, filed=exc.field, value=exc.value),
-        },
-    )
+    error_message = _(errors.ERR_404.message, name=exc.name, filed=exc.field, value=exc.value)
+    content = {"error": errors.ERR_404.error, "message": error_message}
+    return JSONResponse(status_code=status.HTTP_404_NOT_FOUND, content=content)
 
 
 async def resource_exist_handler(request: Request, exc: exceptions.ExistError) -> JSONResponse:
     log_exception(exc, True)
-    return JSONResponse(
-        status_code=status.HTTP_404_NOT_FOUND,
-        content={
-            "error": errors.ERR_409.error,
-            "message": _(errors.ERR_409.message, name=exc.name, filed=exc.field, value=exc.value),
-        },
-    )
+    error_message = _(errors.ERR_409.message, name=exc.name, filed=exc.field, value=exc.value)
+    content = {"error": errors.ERR_409.error, "message": error_message}
+    return JSONResponse(status_code=status.HTTP_404_NOT_FOUND, content=content)
 
 
 def gener_error_handler(request: Request, exc: exceptions.GenerError) -> JSONResponse:

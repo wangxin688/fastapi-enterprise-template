@@ -25,7 +25,7 @@ async def get_session() -> AsyncGenerator[AsyncSession, None]:
         yield session
 
 
-async def auth(request: Request, session: AsyncSession = Depends(get_session), token: str = Depends(token)) -> User:  # noqa: B008
+async def auth(request: Request, session: AsyncSession = Depends(get_session), token: str = Depends(token)) -> User:
     try:
         payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[JWT_ALGORITHM])
     except jwt.DecodeError as e:

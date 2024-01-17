@@ -32,13 +32,16 @@ class AuditTimeBase(BaseModel):
 
 
 class ResultT(BaseModel):
-    id: T
-    message: str = "success"
-    
+    data: T
+
 
 class ListT(BaseModel, Generic[T]):
     count: int
     results: T | None = None
+
+
+class ListResultT(BaseModel, Generic[T]):
+    data: ListT
 
 
 class AppStrEnum(str, Enum):
@@ -75,3 +78,7 @@ class I18nField(BaseModel):
 class VisibleName(TypedDict, total=True):
     en_US: str
     zh_CN: str
+
+
+class IdResponse(BaseModel):
+    id: int

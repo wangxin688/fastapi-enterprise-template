@@ -19,6 +19,7 @@ if TYPE_CHECKING:
     from sqlalchemy.engine.interfaces import ReflectedForeignKeyConstraint, ReflectedUniqueConstraint
 
 ModelT = TypeVar("ModelT", bound=Base)
+RelationT = TypeVar("RelationT", bound=Base)
 CreateSchemaType = TypeVar("CreateSchemaType", bound=BaseModel)
 UpdateSchemaType = TypeVar("UpdateSchemaType", bound=BaseModel)
 QuerySchemaType = TypeVar("QuerySchemaType", bound=QueryParams)
@@ -67,6 +68,16 @@ async def inspect_table(table_name: str) -> dict[str, InspectorTableConstraint]:
 
 class DtoBase(Generic[ModelT, CreateSchemaType, UpdateSchemaType, QuerySchemaType]):
     def __init__(self, model: type[ModelT], undefer_load: bool = False) -> None:
+        """
+        Initializes a new instance of the class.
+
+        Args:
+            model (type[ModelT]): The model to be used.
+            undefer_load (bool, optional): Whether to undefer the loading of the model. Defaults to False.
+
+        Returns:
+            None
+        """
         self.model = model
         self.undefer_load = undefer_load
 
@@ -75,34 +86,88 @@ class DtoBase(Generic[ModelT, CreateSchemaType, UpdateSchemaType, QuerySchemaTyp
         return select(self.model)
 
     def _get_base_count_stmt(self) -> Select[tuple[ModelT]]:
+        """
+        Returns a SQLAlchemy select statement that counts the number of rows in the base table of the model.
+
+        :param self: The instance of the class.
+        :return: A SQLAlchemy select statement that counts the number of rows.
+        :rtype: Select[tuple[ModelT]]
+        """
         return select(func.count()).select_from(self.model)
 
     def _apply_search(self, stmt: Select[tuple[ModelT]], value: str, ignore_case: bool) -> Select[tuple[ModelT]]:
+        """
+        Apply a search filter to the given statement.
+
+        Args:
+            stmt (Select[tuple[ModelT]]): The statement to apply the search filter to.
+            value (str): The value to search for.
+            ignore_case (bool): Whether to ignore case when searching.
+
+        Returns:
+            Select[tuple[ModelT]]: The statement with the search filter applied.
+        """
         where_clauses = []
         search_text = f"%{value}%"
-        if self.model.__search_fields__:
-            for field in self.model.__search_fields__:
-                _t = getattr(self.model, field).type
-                if type(_t) in (HSTORE, JSON, JSONB, INET, MACADDR, ARRAY):
-                    if ignore_case:
-                        where_clauses.append(cast(getattr(self.model, field), Text).ilike(search_text))
-                    else:
-                        where_clauses.append(cast(getattr(self.model, field), Text).like(search_text))
-        if where_clauses:
-            return stmt.where(or_[False, *where_clauses])
-        return stmt
+
+        for field in self.model.__search_fields__:
+            _t = getattr(self.model, field).type
+            if type(_t) in (HSTORE, JSON, JSONB, INET, MACADDR, ARRAY):
+                if ignore_case:
+                    where_clauses.append(cast(getattr(self.model, field), Text).ilike(search_text))
+                else:
+                    where_clauses.append(cast(getattr(self.model, field), Text).like(search_text))
+
+        return stmt.where(or_(False, *where_clauses))
 
     def _apply_order_by(self, stmt: Select[tuple[ModelT]], order_by: str, order: Order) -> Select[tuple[ModelT]]:
-        if order == "ascend":
-            return stmt.order_by(desc(getattr(self.model, order_by)))
-        return stmt.order_by(getattr(self.model, order_by))
+        """
+        Applies an order by clause to the given SELECT statement.
+
+        Args:
+            stmt (Select[tuple[ModelT]]): The SELECT statement to apply the order by clause to.
+            order_by (str): The name of the column to order by.
+            order (Order): The order to apply, either "ascend" or "descend".
+
+        Returns:
+            Select[tuple[ModelT]]: The modified SELECT statement with the order by clause applied.
+        """
+        return (
+            stmt.order_by(desc(getattr(self.model, order_by)))
+            if order == "ascend"
+            else stmt.order_by(getattr(self.model, order_by))
+        )
 
     def _apply_pagination(
         self, stmt: Select[tuple[ModelT]], limit: int | None = 20, offset: int | None = 0
     ) -> Select[tuple[ModelT]]:
+        """
+        Apply pagination to the given SQL statement.
+
+        Args:
+            stmt (Select[tuple[ModelT]]): The SQL statement to apply pagination to.
+            limit (int | None, optional): The maximum number of rows to return. Defaults to 20.
+            offset (int | None, optional): The number of rows to skip. Defaults to 0.
+
+        Returns:
+            Select[tuple[ModelT]]: The paginated SQL statement.
+        """
         return stmt.slice(offset, limit + offset)
 
     def _apply_operator_filter(self, stmt: Select[tuple[ModelT]], key: str, value: Any) -> Select[tuple[ModelT]]:
+        """
+        Apply an operator filter to the given statement.
+
+        Args:
+            stmt (Select[tuple[ModelT]]): The statement to apply the filter to.
+            key (str): The key used to determine the field name and operator. \n
+            key format should be `field_name__operator`.
+            eg: "start_at__lte", "end_at__gt", "name__ic", "name__nic"
+            value (Any): The value used for the filter.
+
+        Returns:
+            Select[tuple[ModelT]]: The filtered statement.
+        """
         operators = {
             "eq": lambda col, value: col.in_(value if isinstance(value, list) else [value]),
             "ne": lambda col, value: ~col.in_(value if isinstance(value, list) else [value]),
@@ -113,15 +178,29 @@ class DtoBase(Generic[ModelT, CreateSchemaType, UpdateSchemaType, QuerySchemaTyp
             "lte": lambda col, value: col <= value,
             "gte": lambda col, value: col >= value,
         }
-        filed_name, operator = key.split("__")
-        if not hasattr(self.model, filed_name):
+
+        field_name, operator = key.split("__")
+        if not hasattr(self.model, field_name):
             return stmt
-        if operator_func := operators.get(operator, None):
-            col = getattr(self.model, filed_name)
+
+        operator_func = operators.get(operator)
+        if operator_func:
+            col = getattr(self.model, field_name)
             return stmt.filter(operator_func(col, value))
+
         return stmt
 
     def _apply_filter(self, stmt: Select[tuple[ModelT]], filters: dict[str, Any]) -> Select[tuple[ModelT]]:
+        """
+        Apply filters to a SQLAlchemy select statement.
+
+        Args:
+            stmt (Select[tuple[ModelT]]): The SQLAlchemy select statement to apply filters to.
+            filters (dict[str, Any]): The filters to apply to the select statement.
+
+        Returns:
+            Select[tuple[ModelT]]: The modified select statement with filters applied.
+        """
         for key, value in filters.items():
             if "__" in key:
                 stmt = self._apply_operator_filter(stmt, key, value)
@@ -131,13 +210,13 @@ class DtoBase(Generic[ModelT, CreateSchemaType, UpdateSchemaType, QuerySchemaTyp
                 if value:
                     if key in self.model.__i18n_files__ and type(getattr(self.model, key).type) is HSTORE:
                         stmt = stmt.where(
-                            or_(getattr(self.model)["zh_CN"].in_(value), getattr(self.model)["zh_CN"].in_(value))
+                            or_(getattr(self.model)["zh_CN"].in_(value), getattr(self.model)["zh_TW"].in_(value))
                         )
                     else:
                         stmt = stmt.where(getattr(self.model, key).in_(value))
                 else:
                     stmt = stmt.where(getattr(self.model, key).in_(value))
-            elif not value:
+            elif value is None:
                 stmt = stmt.where(getattr(self.model, key).is_(None))
             else:
                 stmt = stmt.where(getattr(self.model, key) == value)
@@ -146,11 +225,19 @@ class DtoBase(Generic[ModelT, CreateSchemaType, UpdateSchemaType, QuerySchemaTyp
     def _apply_selectinload(
         self, stmt: Select[tuple[ModelT]], options: tuple[ExecutableOption] | None = None
     ) -> Select[tuple[ModelT]]:
-        if options:
-            stmt = stmt.options(*options)
-        if self.undefer_load:
-            stmt = stmt.options(undefer("*"))
-        return stmt
+        """
+        Apply the selectinload option to a SQLAlchemy select statement.
+
+        Args:
+            stmt (Select[tuple[ModelT]]): The select statement to apply the selectinload option to.
+            options (tuple[ExecutableOption] | None, optional): The additional options to apply to the statement.
+
+        Returns:
+            Select[tuple[ModelT]]: The modified select statement.
+
+        """
+        stmt = stmt.options(*options) if options else stmt
+        return stmt.options(undefer("*")) if self.undefer_load else stmt
 
     def _apply_list(
         self, stmt: Select[tuple[ModelT]], query: QuerySchemaType, excludes: set[str] | None = None
@@ -165,20 +252,87 @@ class DtoBase(Generic[ModelT, CreateSchemaType, UpdateSchemaType, QuerySchemaTyp
 
     @staticmethod
     def _check_not_found(instance: ModelT | Row[Any] | None, table_name: str, column: str, value: Any) -> None:
+        """
+        Check if the given instance is not found in the specified table.
+
+        Parameters:
+            instance (ModelT | Row[Any] | None): The instance to check.
+            table_name (str): The name of the table.
+            column (str): The name of the column.
+            value (Any): The value to search for.
+
+        Returns:
+            None
+
+        Raises:
+            NotFoundError: If the instance is not found.
+        """
         if not instance:
             raise NotFoundError(table_name, column, value)
 
     @staticmethod
     def _check_exist(instance: ModelT | None, table_name: str, column: str, value: Any) -> None:
+        """
+        Check if the given instance exists in the table.
+
+        Args:
+            instance (ModelT | None): The instance to check.
+            table_name (str): The name of the table.
+            column (str): The column to check.
+            value (Any): The value to check.
+
+        Returns:
+            None: This function does not return anything.
+
+        Raises:
+            ExistError: If the instance exists in the table.
+
+        """
         if instance:
             raise ExistError(table_name, column, value)
 
     @staticmethod
     def _update_mutable_tracking(update_schema: UpdateSchemaType, obj: ModelT, excludes: set[str]) -> ModelT:
+        """
+        Updates the mutable attributes of the given object `obj` based on the provided `update_schema`.
+
+        Parameters:
+            update_schema (UpdateSchemaType): The schema containing the updates to be applied.
+            obj (ModelT): The object to be updated.
+            excludes (set[str]): A set of attributes to be excluded from the update process.
+
+        Returns:
+            ModelT: The updated object.
+
+        Description:
+            This static method updates the mutable attributes of the given object `obj`
+            based on the provided `update_schema`. The `update_schema` is an instance
+            of the `UpdateSchemaType`, which defines a schema for updating the object.
+            The method iterates over the key-value pairs in the `update_schema` and
+            applies the updates to the corresponding attributes of the `obj`.
+
+            If the attribute is an instance of a subclass of `Mutable`, the method
+            creates a copy of the attribute and applies the updates to the copy. If the
+            updated value is a dictionary or a list, the method updates the attribute
+            with the new value. If the updated value is a dictionary, the method updates
+            the corresponding key-value pairs in the attribute's copy. Finally, if the
+            attribute is not an instance of a subclass of `Mutable`, the method directly
+            updates the attribute with the new value.
+
+            The method returns the updated object `obj`.
+
+        Precondition:
+            - The `excludes` set should only contain attribute names that exist in the
+              `update_schema`.
+
+        Postcondition:
+            - The object `obj` is updated according to the `update_schema`.
+            - The attributes in `excludes` are not updated.
+        """
         for key, value in update_schema.model_dump(exclude_unset=True, exclude=excludes).items():
             if issubclass(type(getattr(obj, key)), Mutable):
                 field_value = getattr(obj, key).copy()
-                if isinstance(value, list | dict):
+                if isinstance(value, dict | list):
                     if isinstance(value, list):
                         setattr(obj, key, value)
                     else:
@@ -195,17 +349,34 @@ class DtoBase(Generic[ModelT, CreateSchemaType, UpdateSchemaType, QuerySchemaTyp
         uq: dict[str, Any],
         pk_id: int | None = None,
     ) -> None:
+        """
+        Check the unique constraints of the model in the database.
+
+        Args:
+            session (AsyncSession): The database session to use.
+            uq (dict[str, Any]): A dictionary representing the unique constraints to check.
+            pk_id (int | None, optional): The primary key ID of the model instance to exclude from the check.
+            pk_id should be provided if used to update an existing model, obj self will not be checked anymore
+
+        Raises:
+            ExistError: If any of the unique constraints are violated.
+
+        Returns:
+            None: This function does not return anything.
+        """
         stmt = self._get_base_count_stmt()
         if pk_id:
             stmt = stmt.where(self.model.id != pk_id)
+
         for key, value in uq.items():
             if isinstance(value, bool):
                 stmt = stmt.where(getattr(self.model, key).is_(value))
             else:
-                stmt.where(getattr(self.model, key) == value)
+                stmt = stmt.where(getattr(self.model, key) == value)
+
         result = await session.scalar(stmt)
         if result > 0:
-            keys = ",".join(list[uq.keys()])
+            keys = ",".join(uq.keys())
             values = ",".join([f"{key}-{value}" for key, value in uq.items()])
             raise ExistError(self.model.__visible_name__[locale_ctx.get()], keys, values)
 
@@ -225,12 +396,18 @@ class DtoBase(Generic[ModelT, CreateSchemaType, UpdateSchemaType, QuerySchemaTyp
         uniq_args = inspections.get("unique_constraints")
         if not uniq_args:
             return
+
+        # Get the record dictionary
         record_dict = record.model_dump(exclude_unset=True)
+
+        # Iterate over each unique constraint
         for arg in uniq_args:
             uq: dict[str, Any] = {}
+
+            # Check if all columns in the constraint exist in the record dictionary
             for column in arg:
                 if column in record_dict:
-                    if record_dict.get(column):
+                    if record_dict[column]:
                         uq[column] = record_dict[column]
                     else:
                         uq = {}
@@ -238,12 +415,26 @@ class DtoBase(Generic[ModelT, CreateSchemaType, UpdateSchemaType, QuerySchemaTyp
                 else:
                     uq = {}
                     break
+
+            # If the unique constraint is valid, check it against the database
             if uq:
                 await self._check_unique_constraints(session, uq)
 
     async def _apply_unique_constraints_when_update(
         self, session: AsyncSession, record: UpdateSchemaType, inspections: InspectorTableConstraint, obj: ModelT
     ) -> None:
+        """
+        Applies unique constraints when updating a record.
+
+        Args:
+            session (AsyncSession): The asynchronous session used for the database transaction.
+            record (UpdateSchemaType): The record to be updated.
+            inspections (InspectorTableConstraint): The table constraints to be inspected.
+            obj (ModelT): The model object.
+
+        Returns:
+            None: This function does not return anything.
+        """
         uniq_args = inspections.get("unique_constraints")
         if uniq_args:
             record_dict = record.model_dump(exclude_unset=True)
@@ -251,7 +442,8 @@ class DtoBase(Generic[ModelT, CreateSchemaType, UpdateSchemaType, QuerySchemaTyp
             uq: dict[str, Any] = {}
             for column in arg:
                 if column in record_dict:
-                    if any([value := record_dict.get(column), value := getattr(obj, column)]):
+                    value = record_dict.get(column) or getattr(obj, column)
+                    if value is not None:
                         uq[column] = value
                     else:
                         uq = {}
@@ -267,6 +459,17 @@ class DtoBase(Generic[ModelT, CreateSchemaType, UpdateSchemaType, QuerySchemaTyp
     async def _apply_foreign_keys_check(
         self, session: AsyncSession, record: CreateSchemaType | UpdateSchemaType, inspections: InspectorTableConstraint
     ) -> None:
+        """
+        Apply foreign key checks for the given session, record, and inspections.
+
+        Args:
+            session (AsyncSession): The database session.
+            record (CreateSchemaType | UpdateSchemaType): The record to apply foreign key checks to.
+            inspections (InspectorTableConstraint): The inspections containing foreign key information.
+
+        Returns:
+            None: This function does not return anything.
+        """
         fk_args = inspections.get("foreign_keys")
         if not fk_args:
             return
@@ -281,6 +484,17 @@ class DtoBase(Generic[ModelT, CreateSchemaType, UpdateSchemaType, QuerySchemaTyp
     async def list_and_count(
         self, session: AsyncSession, query: QuerySchemaType, options: tuple | None = None
     ) -> tuple[int, Sequence[ModelT]]:
+        """
+        Asynchronously retrieves a list of items from the database and returns the count and results.
+
+        Args:
+            session (AsyncSession): The async session object for the database connection.
+            query (QuerySchemaType): The query schema object containing the query parameters.
+            options (tuple | None, optional): Additional options for the query. Defaults to None.
+
+        Returns:
+            tuple[int, Sequence[ModelT]]: A tuple containing the count of items and the list of results.
+        """
         stmt = self._get_base_stmt()
         c_stmt = self._get_base_count_stmt()
         stmt = self._apply_list(stmt, query)
@@ -297,46 +511,120 @@ class DtoBase(Generic[ModelT, CreateSchemaType, UpdateSchemaType, QuerySchemaTyp
         results = (await session.scalars(stmt)).all()
         return count, results
 
-    async def create(self, session: AsyncSession, obj_in: CreateSchemaType, excludes: set[str] | None = None) -> ModelT:
+    async def create(
+        self,
+        session: AsyncSession,
+        obj_in: CreateSchemaType,
+        excludes: set[str] | None = None,
+        commit: bool | None = True,
+    ) -> ModelT:
+        """
+        Creates a new object in the database.
+
+        Parameters:
+            session (AsyncSession): The database session.
+            obj_in (CreateSchemaType): The input object for creating a new record.
+            excludes (set[str] | None, optional): A set of fields to exclude from the model dump. Defaults to None.
+            commit (bool | None, optional): Whether to commit the changes to the database. Defaults to True.
+
+        Returns:
+            ModelT: The newly created object.
+
+        Raises:
+            None
+        """
         insp = await inspect_table(self.model.__tablename__)
         await self._apply_foreign_keys_check(session, obj_in, insp)
         await self._apply_unique_constraints_when_create(session, obj_in, insp)
         new_obj = self.model(**obj_in.model_dump(exclude_unset=True, exclude=excludes))
-        session.add(new_obj)
-        await session.commit()
-        await session.flush()
+        if commit:
+            return await self.commit(session, new_obj)
         return new_obj
 
     async def update(
-        self, session: AsyncSession, db_obj: ModelT, obj_in: UpdateSchemaType, excludes: set | None = None
+        self,
+        session: AsyncSession,
+        db_obj: ModelT,
+        obj_in: UpdateSchemaType,
+        excludes: set | None = None,
+        commit: bool | None = True,
     ) -> ModelT:
+        """
+        Update a database object.
+
+        Args:
+            session (AsyncSession): The database session.
+            db_obj (ModelT): The database object to update.
+            obj_in (UpdateSchemaType): The updated data for the object.
+            excludes (set | None, optional): The fields to exclude from the update. Defaults to None.
+            commit (bool | None, optional): Whether to commit the changes. Defaults to True.
+
+        Returns:
+            ModelT: The updated database object.
+        """
         insp = await inspect_table(self.model.__tablename__)
         await self._apply_foreign_keys_check(session, obj_in, insp)
         await self._apply_unique_constraints_when_update(session, obj_in, insp, db_obj)
         db_obj = self._update_mutable_tracking(obj_in, db_obj, excludes)
-        session.add(db_obj)
-        await session.commit()
+        if commit:
+            return await self.commit(session, db_obj)
         return db_obj
 
-    async def update_relationship_field(  # noqa: PLR0913
-        self, session: AsyncSession, obj: ModelT, m2m_model: type[ModelT], fk_name: str, fk_values: list[int]
+    async def update_relationship_field(
+        self,
+        session: AsyncSession,
+        obj: ModelT,
+        m2m_model: type[RelationT],
+        relationship_name: str,
+        fk_values: list[int],
     ) -> ModelT:
-        local_fk_values = getattr(obj, fk_name)
-        local_fk_value_ids = [v.id for v in local_fk_values]
-        for fk_value in local_fk_values[::-1]:
+        """
+        Updates a relationship field in the specified object.
+
+        Args:
+            session (AsyncSession): The async session object.
+            obj (ModelT): The object to update the relationship field for.
+            m2m_model (type[RelationT]): The type of the many-to-many or one-to-many relationship model.
+            relationship_name (str): The name of the relationship field.
+            fk_values (list[int]): The list of foreign key values to update.
+
+        Returns:
+            ModelT: The updated object.
+
+        Raises:
+            NotFoundError: If the target object is not found in the many-to-many relationship model.
+        """
+        local_relationship_values = getattr(obj, relationship_name)
+        local_fk_value_ids = [v.id for v in local_relationship_values]
+        for fk_value in local_relationship_values[::-1]:
             if fk_value.id not in fk_values:
-                getattr(obj, fk_name).remove(fk_value)
+                getattr(obj, relationship_name).remove(fk_value)
         for fk_value in fk_values:
             if fk_value not in local_fk_value_ids:
                 target_obj = await session.get(m2m_model, fk_value)
                 if not target_obj:
                     raise NotFoundError(m2m_model.__visible_name__[locale_ctx.get()], "id", fk_value)
-                getattr(obj, fk_name).append(target_obj)
+                getattr(obj, relationship_name).append(target_obj)
         return obj
 
     async def get_one_or_404(
         self, session: AsyncSession, pk_id: int, options: tuple[ExecutableOption] | None
     ) -> ModelT:
+        """
+        Retrieves a single instance of ModelT from the database based on the provided \n
+        primary key (pk_id) and optional query options (options).
+
+        Parameters:
+            session (AsyncSession): The asynchronous session used to execute the database query.
+            pk_id (int): The primary key value used to identify the instance to be retrieved.
+            options (tuple[ExecutableOption] | None): Optional query options to apply to the database query.
+
+        Returns:
+            ModelT: The retrieved instance of ModelT from the database.
+
+        Raises:
+            NotFoundError: If no instance with the given primary key (pk_id) is found in the database.
+        """
         stmt = self._get_base_stmt()
         if options:
             stmt = self._apply_selectinload(options)
@@ -346,12 +634,60 @@ class DtoBase(Generic[ModelT, CreateSchemaType, UpdateSchemaType, QuerySchemaTyp
         return result
 
     async def get_none_or_409(self, session: AsyncSession, field: str, value: Any) -> None:
-        stmt = self._get_base_stmt()
-        if isinstance(value, bool) or value is None:
-            stmt = stmt.where(getattr(self.model).is_(value))
-        else:
-            stmt = stmt.where(getattr(self.model) == value)
-        stmt.with_only_columns(self.model.id)
+        """
+        Check if a record with the given value exists in the database for the specified field.
+
+        Parameters:
+            session (AsyncSession): The asynchronous session used to execute the database query.
+            field (str): The name of the field to check.
+            value (Any): The value to check for existence.
+
+        Returns:
+            None
+
+        Raises:
+            ExistError: If a record with the given value already exists in the database.
+        """
+        stmt = (
+            self._get_base_stmt()
+            .where(
+                getattr(self.model).is_(value)
+                if isinstance(value, bool) or value is None
+                else getattr(self.model) == value
+            )
+            .with_only_columns(self.model.id)
+        )
+
         result = (await session.execute(stmt)).one_or_none()
         if result:
             raise ExistError(self.model.__visible_name__[locale_ctx.get()], field, value)
+
+    async def commit(self, session: AsyncSession, obj: ModelT) -> ModelT:
+        """
+        Commits the changes made in the session and refreshes the given object.
+
+        Args:
+            session (AsyncSession): The session used to commit the changes.
+            obj (ModelT): The object to be refreshed after the commit.
+
+        Returns:
+            ModelT: The creating/updating object.
+        """
+        """"""
+        await session.commit()
+        await session.refresh(obj)
+        return obj
+
+    async def delete(self, session: AsyncSession, db_obj: ModelT) -> None:
+        """
+        Delete a database object.
+
+        Args:
+            session (AsyncSession): The database session.
+            db_obj (ModelT): The object to be deleted from the database.
+
+        Returns:
+            None
+        """
+        await session.delete(db_obj)
+        await session.commit()

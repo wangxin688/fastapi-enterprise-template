@@ -57,7 +57,7 @@ target-version = "py311"
 
 [tool.ruff.lint]
 select = ["ALL"]
-ignore = ["D", "G002", "DTZ003", "ANN401", "ANN101", "ANN102", "EM101", "PD901", "COM812", "ISC001", "FBT", "A003"]
+ignore = ["D", "G002", "DTZ003", "ANN401", "ANN101", "ANN102", "EM101", "PD901", "COM812", "ISC001", "FBT", "A003", "PLR0913", "G004"]
 fixable = ["ALL"]
 
 
@@ -66,7 +66,8 @@ fixable = ["ALL"]
 "tests/*.py" = ["S101"]
 "exception_handlers.py" = ["ARG001"]
 "models.py" = ["RUF012"]
-"api.py" = ["A002"]
+"api.py" = ["A002", "B008"]
+"deps.py" = ["B008"]
 
 [tool.ruff.flake8-bugbear]
 extend-immutable-calls=[
