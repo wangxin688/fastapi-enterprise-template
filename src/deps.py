@@ -50,10 +50,9 @@ async def auth(request: Request, session: AsyncSession = Depends(get_session), t
     return user
 
 
-def check_user_active(is_active: bool)->None:
+def check_user_active(is_active: bool) -> None:
     if not is_active:
         raise exceptions.PermissionDenyError
-    return
 
 
 def check_privileged_role(slug: str, operation_id: str) -> bool:

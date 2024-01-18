@@ -2,7 +2,7 @@ from datetime import datetime
 from typing import ClassVar
 from uuid import UUID
 
-from sqlalchemy import DateTime, ForeignKey, func, select, and_
+from sqlalchemy import DateTime, ForeignKey, and_, func, select
 from sqlalchemy.dialects.postgresql import JSON
 from sqlalchemy.ext.mutable import MutableDict
 from sqlalchemy.orm import Mapped, column_property, mapped_column, relationship
@@ -75,6 +75,9 @@ Group.user_count = column_property(
     deferred=True,
 )
 Role.permission_count = column_property(
-    select(func.count(Permission.id)).where(and_(RolePermission.role_id == Role.id, RolePermission.permission_id==Permission.id)).correlate_except(Role).scalar_subquery(),
+    select(func.count(Permission.id))
+    .where(and_(RolePermission.role_id == Role.id, RolePermission.permission_id == Permission.id))
+    .correlate_except(Role)
+    .scalar_subquery(),
     deferred=True,
 )

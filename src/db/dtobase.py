@@ -46,7 +46,7 @@ def register_table_params(table_name: str, params: InspectorTableConstraint) -> 
 
 async def inspect_table(table_name: str) -> InspectorTableConstraint:
     """Reflect table schema to inspect unique constraints and many-to-one fks and cache in memory"""
-    if result := TABLE_PARAMS.get(table_name): # type: ignore
+    if result := TABLE_PARAMS.get(table_name):
         return result
     async with async_engine.connect() as conn:
         result: InspectorTableConstraint = {"unique_constraints": [], "foreign_keys": {}}
@@ -69,7 +69,6 @@ async def inspect_table(table_name: str) -> InspectorTableConstraint:
 
 
 class DtoBase(Generic[ModelT, CreateSchemaType, UpdateSchemaType, QuerySchemaType]):
-
     id_attribute: str = "id"
 
     def __init__(self, model: type[ModelT], undefer_load: bool = False) -> None:
@@ -86,20 +85,19 @@ class DtoBase(Generic[ModelT, CreateSchemaType, UpdateSchemaType, QuerySchemaTyp
         self.model = model
         self.undefer_load = undefer_load
         self.id_attr = self.get_id_attribute_value(self.model)
-    
+
     @overload
     @classmethod
-    def get_id_attribute_value(cls, obj: ModelT, id_attribute: str | None = None)-> PkIdT:
+    def get_id_attribute_value(cls, obj: ModelT, id_attribute: str | None = None) -> PkIdT:
         ...
-    
+
     @overload
     @classmethod
-    def get_id_attribute_value(cls, obj: type[ModelT], id_attribute: str | None = None)-> str:
+    def get_id_attribute_value(cls, obj: type[ModelT], id_attribute: str | None = None) -> str:
         ...
-    
 
     @classmethod
-    def get_id_attribute_value(cls, obj: ModelT | type[ModelT], id_attribute: str | None = None)-> str | PkIdT:
+    def get_id_attribute_value(cls, obj: ModelT | type[ModelT], id_attribute: str | None = None) -> str | PkIdT:
         return getattr(obj, id_attribute if id_attribute is not None else cls.id_attribute)
 
     def _get_base_stmt(self) -> Select[tuple[ModelT]]:
@@ -159,9 +157,7 @@ class DtoBase(Generic[ModelT, CreateSchemaType, UpdateSchemaType, QuerySchemaTyp
             else stmt.order_by(getattr(self.model, order_by))
         )
 
-    def _apply_pagination(
-        self, stmt: Select[tuple[ModelT]], limit: int = 20, offset: int = 0
-    ) -> Select[tuple[ModelT]]:
+    def _apply_pagination(self, stmt: Select[tuple[ModelT]], limit: int = 20, offset: int = 0) -> Select[tuple[ModelT]]:
         """
         Apply pagination to the given SQL statement.
 
@@ -231,7 +227,10 @@ class DtoBase(Generic[ModelT, CreateSchemaType, UpdateSchemaType, QuerySchemaTyp
                 if value:
                     if key in self.model.__i18n_files__ and type(getattr(self.model, key).type) is HSTORE:
                         stmt = stmt.where(
-                            or_(getattr(self.model, key)["zh_CN"].in_(value), getattr(self.model, key)["zh_TW"].in_(value))
+                            or_(
+                                getattr(self.model, key)["zh_CN"].in_(value),
+                                getattr(self.model, key)["zh_TW"].in_(value),
+                            )
                         )
                     else:
                         stmt = stmt.where(getattr(self.model, key).in_(value))
@@ -243,9 +242,7 @@ class DtoBase(Generic[ModelT, CreateSchemaType, UpdateSchemaType, QuerySchemaTyp
                 stmt = stmt.where(getattr(self.model, key) == value)
         return stmt
 
-    def _apply_selectinload(
-        self, stmt: Select[tuple[ModelT]], *options: ExecutableOption
-    ) -> Select[tuple[ModelT]]:
+    def _apply_selectinload(self, stmt: Select[tuple[ModelT]], *options: ExecutableOption) -> Select[tuple[ModelT]]:
         """
         Apply the selectinload option to a SQLAlchemy select statement.
 
@@ -313,7 +310,9 @@ class DtoBase(Generic[ModelT, CreateSchemaType, UpdateSchemaType, QuerySchemaTyp
             raise ExistError(table_name, column, value)
 
     @staticmethod
-    def _update_mutable_tracking(update_schema: UpdateSchemaType, obj: ModelT, excludes: set[str] | None= None) -> ModelT:
+    def _update_mutable_tracking(
+        update_schema: UpdateSchemaType, obj: ModelT, excludes: set[str] | None = None
+    ) -> ModelT:
         """
         Updates the mutable attributes of the given object `obj` based on the provided `update_schema`.
 
@@ -458,7 +457,7 @@ class DtoBase(Generic[ModelT, CreateSchemaType, UpdateSchemaType, QuerySchemaTyp
         """
         uniq_args = inspections.get("unique_constraints")
         if not uniq_args:
-            return 
+            return
         record_dict = record.model_dump(exclude_unset=True)
         for arg in uniq_args:
             uq: dict[str, Any] = {}
@@ -567,7 +566,7 @@ class DtoBase(Generic[ModelT, CreateSchemaType, UpdateSchemaType, QuerySchemaTyp
         session: AsyncSession,
         db_obj: ModelT,
         obj_in: UpdateSchemaType,
-        excludes: set[str] | None= None,
+        excludes: set[str] | None = None,
         commit: bool | None = True,
     ) -> ModelT:
         """
@@ -599,7 +598,6 @@ class DtoBase(Generic[ModelT, CreateSchemaType, UpdateSchemaType, QuerySchemaTyp
         relationship_name: str,
         fk_values: Sequence[PkIdT] | None,
         relationship_pk_name: str = id_attribute,
-
     ) -> ModelT:
         """
         Updates a relationship field in the specified object.
@@ -627,13 +625,13 @@ class DtoBase(Generic[ModelT, CreateSchemaType, UpdateSchemaType, QuerySchemaTyp
                 if fk_value not in local_fk_value_ids:
                     target_obj = await session.get(m2m_model, fk_value)
                     if not target_obj:
-                        raise NotFoundError(m2m_model.__visible_name__[locale_ctx.get()], relationship_pk_name, fk_value)
+                        raise NotFoundError(
+                            m2m_model.__visible_name__[locale_ctx.get()], relationship_pk_name, fk_value
+                        )
                     getattr(obj, relationship_name).append(target_obj)
         return obj
 
-    async def get_one_or_404(
-        self, session: AsyncSession, pk_id: PkIdT, *options: ExecutableOption
-    ) -> ModelT:
+    async def get_one_or_404(self, session: AsyncSession, pk_id: PkIdT, *options: ExecutableOption) -> ModelT:
         """
         Retrieves a single instance of ModelT from the database based on the provided \n
         primary key (pk_id) and optional query options (options).

@@ -15,8 +15,6 @@ from src.exceptions import GenerError
 router = APIRouter()
 
 
-
-
 @cbv(router)
 class UserCbv:
     user: User = Depends(auth)
@@ -34,7 +32,7 @@ class UserCbv:
             self.session,
             id,
             selectinload(User.role).load_only(Role.id, Role.name),
-            selectinload(User.group).load_only(Group.id, Group.name)
+            selectinload(User.group).load_only(Group.id, Group.name),
         )
         return ResultT(data=schemas.UserDetail.model_validate(db_user))
 
