@@ -268,8 +268,7 @@ class DtoBase(Generic[ModelT, CreateSchemaType, UpdateSchemaType, QuerySchemaTyp
             stmt = self._apply_filter(stmt, filters)
         return stmt
 
-    @staticmethod
-    def _check_not_found(instance: ModelT | Row[Any] | None, table_name: str, column: str, value: Any) -> None:
+    def _check_not_found(self, instance: ModelT | Row[Any] | None, column: str, value: Any) -> None:
         """
         Check if the given instance is not found in the specified table.
 
@@ -286,10 +285,9 @@ class DtoBase(Generic[ModelT, CreateSchemaType, UpdateSchemaType, QuerySchemaTyp
             NotFoundError: If the instance is not found.
         """
         if not instance:
-            raise NotFoundError(table_name, column, value)
+            raise NotFoundError(self.model.__visible_name__[locale_ctx.get()], column, value)
 
-    @staticmethod
-    def _check_exist(instance: ModelT | None, table_name: str, column: str, value: Any) -> None:
+    def _check_exist(self, instance: ModelT | Row[Any] | None, column: str, value: Any) -> None:
         """
         Check if the given instance exists in the table.
 
@@ -307,7 +305,7 @@ class DtoBase(Generic[ModelT, CreateSchemaType, UpdateSchemaType, QuerySchemaTyp
 
         """
         if instance:
-            raise ExistError(table_name, column, value)
+            raise ExistError(self.model.__visible_name__[locale_ctx.get()], column, value)
 
     @staticmethod
     def _update_mutable_tracking(
@@ -501,7 +499,7 @@ class DtoBase(Generic[ModelT, CreateSchemaType, UpdateSchemaType, QuerySchemaTyp
                 table_name, column = relation
                 stmt_text = f"SELECT 1 FROM {table_name} WHERE {column}='{value}'"  # noqa: S608
                 fk_result = (await session.execute(text(stmt_text))).one_or_none()
-                self._check_not_found(fk_result, table_name, column, value)
+                self._check_not_found(fk_result, column, value)
 
     async def list_and_count(
         self, session: AsyncSession, query: QuerySchemaType, *options: ExecutableOption
@@ -681,8 +679,31 @@ class DtoBase(Generic[ModelT, CreateSchemaType, UpdateSchemaType, QuerySchemaTyp
         )
 
         result = (await session.execute(stmt)).one_or_none()
-        if result:
-            raise ExistError(self.model.__visible_name__[locale_ctx.get()], field, value)
+        self._check_exist(result, field, value)
+
+    async def get_one_by_field(self, session: AsyncSession, field: str, value: Any) -> ModelT | None:
+        stmt = self._get_base_stmt().where(
+            getattr(self.model, field).is_(value)
+            if isinstance(value, bool) or value is None
+            else getattr(self.model, field) == value
+        )
+        return await session.scalar(stmt)
+
+    async def get_many_by_field(self, session: AsyncSession, field: str, value: str) -> Sequence[ModelT]:
+        stmt = self._get_base_stmt().where(
+            getattr(self.model, field).is_(value)
+            if isinstance(value, bool) or value is None
+            else getattr(self.model, field) == value
+        )
+        return (await session.scalars(stmt)).all()
+
+    async def get_by_filters(
+        self, session: AsyncSession, filters: dict[str, Any], *options: ExecutableOption
+    ) -> Sequence[ModelT]:
+        stmt = self._get_base_stmt()
+        stmt = self._apply_filter(stmt, filters)
+        stmt = self._apply_selectinload(stmt, *options)
+        return (await session.scalars(stmt)).all()
 
     async def commit(self, session: AsyncSession, obj: ModelT) -> ModelT:
         """
