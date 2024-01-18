@@ -18,7 +18,7 @@ PWD_CONTEXT = CryptContext(
     bcrypt__rounds=settings.SECURITY_BCRYPT_ROUNDS,
 )
 
-API_WHITE_LISTS: set[str] = {}
+API_WHITE_LISTS: set[str] = set()
 
 
 class JwtTokenPayload(BaseModel):
@@ -41,7 +41,7 @@ def create_jwt_token(subject: int, expire_seconds: int, refresh: bool) -> tuple[
     """
     issued_at = int(time.time())
     expires_at = issued_at + expire_seconds
-    to_encode = dict[str, int | str | bool] = {
+    to_encode: dict[str, int | str | bool] = {
         "issued_at": issued_at,
         "expires_at": expires_at,
         "sub": str(subject),
@@ -51,7 +51,7 @@ def create_jwt_token(subject: int, expire_seconds: int, refresh: bool) -> tuple[
     return encode_jwt, expires_at, issued_at
 
 
-def generate_access_token_response(subject: UUID) -> AccessToken:
+def generate_access_token_response(subject: int) -> AccessToken:
     """Generate tokens and return AccessTokenResponse."""
     at, et, it = create_jwt_token(subject, ACCESS_TOKEN_EXPIRE_SECS, refresh=False)
     rat, ret, rit = create_jwt_token(subject, REFRESH_TOKEN_EXPIRE_SECS, refresh=True)

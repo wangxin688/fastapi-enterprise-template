@@ -27,7 +27,7 @@ class GroupDto(DtoBase[Group, schemas.GroupCreate, schemas.GroupUpdate, schemas.
             Group: The newly created group.
 
         """
-        new_group = await self.create(session, group, excludes=group.user_ids, commit=False)
+        new_group = await self.create(session, group, excludes={"user_ids"}, commit=False)
         new_group.user.extend(users)
         return await self.commit(session, new_group)
 
@@ -48,7 +48,7 @@ class RoleDto(DtoBase[Role, schemas.RoleCreate, schemas.RoleUpdate, schemas.Role
             Role: The newly created role.
 
         """
-        new_role = await self.create(session, role, excludes=role.permission_ids, commit=False)
+        new_role = await self.create(session, role, excludes={"permission_ids"}, commit=False)
         new_role.permission.extend(permissions)
         return await self.commit(session, new_role)
 

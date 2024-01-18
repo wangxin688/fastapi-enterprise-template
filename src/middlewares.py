@@ -2,6 +2,7 @@ import io
 import json
 import time
 import uuid
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import datetime
 
@@ -23,9 +24,10 @@ def _get_default_id() -> str:
 class RequestMiddleware(BaseHTTPMiddleware):
     app: ASGIApp
     get_default_id_func = _get_default_id
-    dispatch_func: callable = field(init=False)
+    dispatch_func: Callable = field(init=False)
     csv_mime: str = "text/csv"
     time_header = "x-request-time"
+    id_header = "x-request-id"
     content_type: str = "Content-Type"
 
     def __post_init__(self) -> None:
@@ -37,7 +39,7 @@ class RequestMiddleware(BaseHTTPMiddleware):
         request_id_ctx.set(request_id)
         language = request.headers.get(locale_ctx.name, locale_ctx.get())
         if language not in ACCEPTED_LANGUAGES:
-            language = ACCEPTED_LANGUAGES[0]
+            language = "en_US"
         locale_ctx.set(language)
         content_type = request.headers.get(self.content_type, None)
         if all((content_type, content_type == self.csv_mime, request.method == "GET")):
@@ -57,6 +59,6 @@ class RequestMiddleware(BaseHTTPMiddleware):
                     return csv_resp
         response = await call_next(request)
         response.headers[self.id_header] = request_id
-        process_time = time.time() - start_time
+        process_time = str(time.time() - start_time)
         response.headers[self.time_header] = process_time
         return response

@@ -5,7 +5,7 @@ from operator import getitem
 from typing import Any, Literal, TypeAlias
 
 from src.context import locale_ctx
-from src.utils.openapi import translations
+from src.openapi import translations
 from src.utils.singleton import singleton
 
 ACCEPTED_LANGUAGES: TypeAlias = Literal["en_US", "zh_CN"]
@@ -29,7 +29,7 @@ class I18n:
 
     def _find(self, language: ACCEPTED_LANGUAGES, path: str) -> dict | str:
         try:
-            return reduce(getitem, path.split("."), self.locales[language])
+            return reduce(getitem, path.split("."), self.translations[language])
         except (KeyError, TypeError):
             return f"missing translation for {language}"
 

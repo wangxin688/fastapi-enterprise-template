@@ -58,7 +58,7 @@ class GenerError(Exception):
         self,
         error: ErrorCode,
         params: dict[str, Any] | None = None,
-        status_code: int | None = status.HTTP_400_BAD_REQUEST,
+        status_code: int = status.HTTP_400_BAD_REQUEST,
     ) -> None:
         self.error = error
         self.params = params

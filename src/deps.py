@@ -2,8 +2,8 @@ from collections.abc import AsyncGenerator
 from datetime import UTC, datetime
 
 import jwt
-from fastapi import Request
-from fastapi.security import Depends, HTTPBearer
+from fastapi import Depends, Request
+from fastapi.security import HTTPBearer
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
