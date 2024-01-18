@@ -1,5 +1,6 @@
 from collections.abc import AsyncGenerator
 from datetime import UTC, datetime
+from typing import Annotated
 
 import jwt
 from fastapi import Depends, Request
@@ -75,3 +76,7 @@ async def check_role_permissions(role_id: int, session: AsyncSession, operation_
         await redis_client.set_nx(name=str(role_id), value=permissions, namespace=CacheNamespace.ROLE_CACHE)
     if operation_id not in permissions:
         raise exceptions.PermissionDenyError
+
+
+SqlaSession = Annotated[AsyncSession, Depends(get_session)]
+AuthUser = Annotated[User, Depends(auth)]

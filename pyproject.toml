@@ -68,6 +68,7 @@ fixable = ["ALL"]
 "models.py" = ["RUF012"]
 "api.py" = ["A002", "B008"]
 "deps.py" = ["B008"]
+"src/internal/api.py" = ["ARG001"]
 
 [tool.ruff.flake8-bugbear]
 extend-immutable-calls=[
