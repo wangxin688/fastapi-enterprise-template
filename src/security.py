@@ -1,6 +1,5 @@
 import time
 from datetime import datetime
-from uuid import UUID
 
 import jwt
 from passlib.context import CryptContext
