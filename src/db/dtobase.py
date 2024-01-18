@@ -1,5 +1,6 @@
 from collections.abc import Sequence
-from typing import TYPE_CHECKING, Any, Generic, NamedTuple, TypedDict, TypeVar
+from typing import TYPE_CHECKING, Any, Generic, NamedTuple, TypedDict, TypeVar, overload
+from uuid import UUID
 
 from pydantic import BaseModel
 from sqlalchemy import Row, Select, Text, cast, desc, func, inspect, not_, or_, select, text
@@ -19,6 +20,7 @@ if TYPE_CHECKING:
     from sqlalchemy.engine.interfaces import ReflectedForeignKeyConstraint, ReflectedUniqueConstraint
 
 ModelT = TypeVar("ModelT", bound=Base)
+PkIdT = TypeVar("PkIdT", int, UUID)
 RelationT = TypeVar("RelationT", bound=Base)
 CreateSchemaType = TypeVar("CreateSchemaType", bound=BaseModel)
 UpdateSchemaType = TypeVar("UpdateSchemaType", bound=BaseModel)
@@ -42,9 +44,9 @@ def register_table_params(table_name: str, params: InspectorTableConstraint) -> 
         TABLE_PARAMS[table_name] = params
 
 
-async def inspect_table(table_name: str) -> dict[str, InspectorTableConstraint]:
+async def inspect_table(table_name: str) -> InspectorTableConstraint:
     """Reflect table schema to inspect unique constraints and many-to-one fks and cache in memory"""
-    if result := TABLE_PARAMS.get(table_name):
+    if result := TABLE_PARAMS.get(table_name): # type: ignore
         return result
     async with async_engine.connect() as conn:
         result: InspectorTableConstraint = {"unique_constraints": [], "foreign_keys": {}}
@@ -67,6 +69,9 @@ async def inspect_table(table_name: str) -> dict[str, InspectorTableConstraint]:
 
 
 class DtoBase(Generic[ModelT, CreateSchemaType, UpdateSchemaType, QuerySchemaType]):
+
+    id_attribute: str = "id"
+
     def __init__(self, model: type[ModelT], undefer_load: bool = False) -> None:
         """
         Initializes a new instance of the class.
@@ -80,12 +85,28 @@ class DtoBase(Generic[ModelT, CreateSchemaType, UpdateSchemaType, QuerySchemaTyp
         """
         self.model = model
         self.undefer_load = undefer_load
+        self.id_attr = self.get_id_attribute_value(self.model)
+    
+    @overload
+    @classmethod
+    def get_id_attribute_value(cls, obj: ModelT, id_attribute: str | None = None)-> PkIdT:
+        ...
+    
+    @overload
+    @classmethod
+    def get_id_attribute_value(cls, obj: type[ModelT], id_attribute: str | None = None)-> str:
+        ...
+    
+
+    @classmethod
+    def get_id_attribute_value(cls, obj: ModelT | type[ModelT], id_attribute: str | None = None)-> str | PkIdT:
+        return getattr(obj, id_attribute if id_attribute is not None else cls.id_attribute)
 
     def _get_base_stmt(self) -> Select[tuple[ModelT]]:
         """Get base select statement of query"""
         return select(self.model)
 
-    def _get_base_count_stmt(self) -> Select[tuple[ModelT]]:
+    def _get_base_count_stmt(self) -> Select[tuple[int]]:
         """
         Returns a SQLAlchemy select statement that counts the number of rows in the base table of the model.
 
@@ -95,7 +116,7 @@ class DtoBase(Generic[ModelT, CreateSchemaType, UpdateSchemaType, QuerySchemaTyp
         """
         return select(func.count()).select_from(self.model)
 
-    def _apply_search(self, stmt: Select[tuple[ModelT]], value: str, ignore_case: bool) -> Select[tuple[ModelT]]:
+    def _apply_search(self, stmt: Select[tuple[ModelT]], value: str, ignore_case: bool = True) -> Select[tuple[ModelT]]:
         """
         Apply a search filter to the given statement.
 
@@ -139,15 +160,15 @@ class DtoBase(Generic[ModelT, CreateSchemaType, UpdateSchemaType, QuerySchemaTyp
         )
 
     def _apply_pagination(
-        self, stmt: Select[tuple[ModelT]], limit: int | None = 20, offset: int | None = 0
+        self, stmt: Select[tuple[ModelT]], limit: int = 20, offset: int = 0
     ) -> Select[tuple[ModelT]]:
         """
         Apply pagination to the given SQL statement.
 
         Args:
             stmt (Select[tuple[ModelT]]): The SQL statement to apply pagination to.
-            limit (int | None, optional): The maximum number of rows to return. Defaults to 20.
-            offset (int | None, optional): The number of rows to skip. Defaults to 0.
+            limit (int): The maximum number of rows to return. Defaults to 20.
+            offset (int): The number of rows to skip. Defaults to 0.
 
         Returns:
             Select[tuple[ModelT]]: The paginated SQL statement.
@@ -210,7 +231,7 @@ class DtoBase(Generic[ModelT, CreateSchemaType, UpdateSchemaType, QuerySchemaTyp
                 if value:
                     if key in self.model.__i18n_files__ and type(getattr(self.model, key).type) is HSTORE:
                         stmt = stmt.where(
-                            or_(getattr(self.model)["zh_CN"].in_(value), getattr(self.model)["zh_TW"].in_(value))
+                            or_(getattr(self.model, key)["zh_CN"].in_(value), getattr(self.model, key)["zh_TW"].in_(value))
                         )
                     else:
                         stmt = stmt.where(getattr(self.model, key).in_(value))
@@ -223,7 +244,7 @@ class DtoBase(Generic[ModelT, CreateSchemaType, UpdateSchemaType, QuerySchemaTyp
         return stmt
 
     def _apply_selectinload(
-        self, stmt: Select[tuple[ModelT]], options: tuple[ExecutableOption] | None = None
+        self, stmt: Select[tuple[ModelT]], *options: ExecutableOption
     ) -> Select[tuple[ModelT]]:
         """
         Apply the selectinload option to a SQLAlchemy select statement.
@@ -292,7 +313,7 @@ class DtoBase(Generic[ModelT, CreateSchemaType, UpdateSchemaType, QuerySchemaTyp
             raise ExistError(table_name, column, value)
 
     @staticmethod
-    def _update_mutable_tracking(update_schema: UpdateSchemaType, obj: ModelT, excludes: set[str]) -> ModelT:
+    def _update_mutable_tracking(update_schema: UpdateSchemaType, obj: ModelT, excludes: set[str] | None= None) -> ModelT:
         """
         Updates the mutable attributes of the given object `obj` based on the provided `update_schema`.
 
@@ -347,7 +368,7 @@ class DtoBase(Generic[ModelT, CreateSchemaType, UpdateSchemaType, QuerySchemaTyp
         self,
         session: AsyncSession,
         uq: dict[str, Any],
-        pk_id: int | None = None,
+        pk_id: PkIdT | None = None,
     ) -> None:
         """
         Check the unique constraints of the model in the database.
@@ -366,7 +387,7 @@ class DtoBase(Generic[ModelT, CreateSchemaType, UpdateSchemaType, QuerySchemaTyp
         """
         stmt = self._get_base_count_stmt()
         if pk_id:
-            stmt = stmt.where(self.model.id != pk_id)
+            stmt = stmt.where(getattr(self.model, self.id_attr) != pk_id)
 
         for key, value in uq.items():
             if isinstance(value, bool):
@@ -375,7 +396,7 @@ class DtoBase(Generic[ModelT, CreateSchemaType, UpdateSchemaType, QuerySchemaTyp
                 stmt = stmt.where(getattr(self.model, key) == value)
 
         result = await session.scalar(stmt)
-        if result > 0:
+        if result is not None and result > 0:
             keys = ",".join(uq.keys())
             values = ",".join([f"{key}-{value}" for key, value in uq.items()])
             raise ExistError(self.model.__visible_name__[locale_ctx.get()], keys, values)
@@ -436,8 +457,9 @@ class DtoBase(Generic[ModelT, CreateSchemaType, UpdateSchemaType, QuerySchemaTyp
             None: This function does not return anything.
         """
         uniq_args = inspections.get("unique_constraints")
-        if uniq_args:
-            record_dict = record.model_dump(exclude_unset=True)
+        if not uniq_args:
+            return 
+        record_dict = record.model_dump(exclude_unset=True)
         for arg in uniq_args:
             uq: dict[str, Any] = {}
             for column in arg:
@@ -454,7 +476,8 @@ class DtoBase(Generic[ModelT, CreateSchemaType, UpdateSchemaType, QuerySchemaTyp
                     uq = {}
                     break
             if uq:
-                await self._check_unique_constraints(session, uq, obj.id)
+                id_field = self.get_id_attribute_value(obj)
+                await self._check_unique_constraints(session, uq, id_field)
 
     async def _apply_foreign_keys_check(
         self, session: AsyncSession, record: CreateSchemaType | UpdateSchemaType, inspections: InspectorTableConstraint
@@ -482,7 +505,7 @@ class DtoBase(Generic[ModelT, CreateSchemaType, UpdateSchemaType, QuerySchemaTyp
                 self._check_not_found(fk_result, table_name, column, value)
 
     async def list_and_count(
-        self, session: AsyncSession, query: QuerySchemaType, options: tuple | None = None
+        self, session: AsyncSession, query: QuerySchemaType, *options: ExecutableOption
     ) -> tuple[int, Sequence[ModelT]]:
         """
         Asynchronously retrieves a list of items from the database and returns the count and results.
@@ -496,20 +519,18 @@ class DtoBase(Generic[ModelT, CreateSchemaType, UpdateSchemaType, QuerySchemaTyp
             tuple[int, Sequence[ModelT]]: A tuple containing the count of items and the list of results.
         """
         stmt = self._get_base_stmt()
-        c_stmt = self._get_base_count_stmt()
         stmt = self._apply_list(stmt, query)
-        c_stmt = self._apply_list(c_stmt, query)
         if query.q:
             stmt = self._apply_search(stmt, query.q)
-            c_stmt = self._apply_search(c_stmt, query.q)
+        c_stmt = stmt.with_only_columns(func.count()).order_by(None)
         if query.limit is not None and query.offset is not None:
             stmt = self._apply_pagination(stmt, query.limit, query.offset)
         if query.order_by and query.order:
             stmt = self._apply_order_by(stmt, query.order_by, query.order)
-        stmt = self._apply_selectinload(stmt, options, True)
-        count: int = await session.scalar(c_stmt)  # type: ignore  # noqa: PGH003
+        stmt = self._apply_selectinload(stmt, *options)
+        _count = await session.scalar(c_stmt)
         results = (await session.scalars(stmt)).all()
-        return count, results
+        return _count if _count is not None else 0, results
 
     async def create(
         self,
@@ -546,7 +567,7 @@ class DtoBase(Generic[ModelT, CreateSchemaType, UpdateSchemaType, QuerySchemaTyp
         session: AsyncSession,
         db_obj: ModelT,
         obj_in: UpdateSchemaType,
-        excludes: set | None = None,
+        excludes: set[str] | None= None,
         commit: bool | None = True,
     ) -> ModelT:
         """
@@ -576,7 +597,9 @@ class DtoBase(Generic[ModelT, CreateSchemaType, UpdateSchemaType, QuerySchemaTyp
         obj: ModelT,
         m2m_model: type[RelationT],
         relationship_name: str,
-        fk_values: list[int],
+        fk_values: Sequence[PkIdT] | None,
+        relationship_pk_name: str = id_attribute,
+
     ) -> ModelT:
         """
         Updates a relationship field in the specified object.
@@ -586,7 +609,7 @@ class DtoBase(Generic[ModelT, CreateSchemaType, UpdateSchemaType, QuerySchemaTyp
             obj (ModelT): The object to update the relationship field for.
             m2m_model (type[RelationT]): The type of the many-to-many or one-to-many relationship model.
             relationship_name (str): The name of the relationship field.
-            fk_values (list[int]): The list of foreign key values to update.
+            fk_values (Sequence[PkIdT]): The list of foreign key values to update.
 
         Returns:
             ModelT: The updated object.
@@ -594,21 +617,22 @@ class DtoBase(Generic[ModelT, CreateSchemaType, UpdateSchemaType, QuerySchemaTyp
         Raises:
             NotFoundError: If the target object is not found in the many-to-many relationship model.
         """
-        local_relationship_values = getattr(obj, relationship_name)
-        local_fk_value_ids = [v.id for v in local_relationship_values]
+        local_relationship_values: Sequence[RelationT] = getattr(obj, relationship_name)
+        local_fk_value_ids: list[PkIdT] = [getattr(v, relationship_pk_name) for v in local_relationship_values]
         for fk_value in local_relationship_values[::-1]:
-            if fk_value.id not in fk_values:
+            if getattr(fk_value, relationship_pk_name) not in fk_values:
                 getattr(obj, relationship_name).remove(fk_value)
-        for fk_value in fk_values:
-            if fk_value not in local_fk_value_ids:
-                target_obj = await session.get(m2m_model, fk_value)
-                if not target_obj:
-                    raise NotFoundError(m2m_model.__visible_name__[locale_ctx.get()], "id", fk_value)
-                getattr(obj, relationship_name).append(target_obj)
+        if fk_values:
+            for fk_value in fk_values:
+                if fk_value not in local_fk_value_ids:
+                    target_obj = await session.get(m2m_model, fk_value)
+                    if not target_obj:
+                        raise NotFoundError(m2m_model.__visible_name__[locale_ctx.get()], relationship_pk_name, fk_value)
+                    getattr(obj, relationship_name).append(target_obj)
         return obj
 
     async def get_one_or_404(
-        self, session: AsyncSession, pk_id: int, options: tuple[ExecutableOption] | None
+        self, session: AsyncSession, pk_id: PkIdT, *options: ExecutableOption
     ) -> ModelT:
         """
         Retrieves a single instance of ModelT from the database based on the provided \n
@@ -616,8 +640,8 @@ class DtoBase(Generic[ModelT, CreateSchemaType, UpdateSchemaType, QuerySchemaTyp
 
         Parameters:
             session (AsyncSession): The asynchronous session used to execute the database query.
-            pk_id (int): The primary key value used to identify the instance to be retrieved.
-            options (tuple[ExecutableOption] | None): Optional query options to apply to the database query.
+            pk_id (PkIdT): The primary key value used to identify the instance to be retrieved.
+            *options ExecutableOption: query options to apply to the database query.
 
         Returns:
             ModelT: The retrieved instance of ModelT from the database.
@@ -627,10 +651,10 @@ class DtoBase(Generic[ModelT, CreateSchemaType, UpdateSchemaType, QuerySchemaTyp
         """
         stmt = self._get_base_stmt()
         if options:
-            stmt = self._apply_selectinload(options)
+            stmt = self._apply_selectinload(stmt, *options)
         result = (await session.scalars(stmt)).one_or_none()
         if not result:
-            raise NotFoundError(self.model.__visible_name__[locale_ctx.get()], "id", pk_id)
+            raise NotFoundError(self.model.__visible_name__[locale_ctx.get()], self.id_attribute, pk_id)
         return result
 
     async def get_none_or_409(self, session: AsyncSession, field: str, value: Any) -> None:
@@ -651,11 +675,11 @@ class DtoBase(Generic[ModelT, CreateSchemaType, UpdateSchemaType, QuerySchemaTyp
         stmt = (
             self._get_base_stmt()
             .where(
-                getattr(self.model).is_(value)
+                getattr(self.model, field).is_(value)
                 if isinstance(value, bool) or value is None
-                else getattr(self.model) == value
+                else getattr(self.model, field) == value
             )
-            .with_only_columns(self.model.id)
+            .with_only_columns(getattr(self.model, self.id_attr))
         )
 
         result = (await session.execute(stmt)).one_or_none()

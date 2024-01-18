@@ -15,6 +15,8 @@ from src.exceptions import GenerError
 router = APIRouter()
 
 
+
+
 @cbv(router)
 class UserCbv:
     user: User = Depends(auth)
@@ -31,10 +33,8 @@ class UserCbv:
         db_user = await user_dto.get_one_or_404(
             self.session,
             id,
-            options=(
-                selectinload(User.role).load_only(Role.id, Role.name),
-                selectinload(User.group).load_only(Group.id, Group.name),
-            ),
+            selectinload(User.role).load_only(Role.id, Role.name),
+            selectinload(User.group).load_only(Group.id, Group.name)
         )
         return ResultT(data=schemas.UserDetail.model_validate(db_user))
 
@@ -43,10 +43,8 @@ class UserCbv:
         count, results = await user_dto.list_and_count(
             self.session,
             query,
-            options=(
-                selectinload(User.role).load_only(Role.id, Role.name),
-                selectinload(User.group).load_only(Group.id, Group.name),
-            ),
+            selectinload(User.role).load_only(Role.id, Role.name),
+            selectinload(User.group).load_only(Group.id, Group.name),
         )
         return ListResultT(data=ListT(count=count, results=results))
 
@@ -92,11 +90,11 @@ class GroupCbv:
 
     @router.put("/groups/{id}", operation_id="2fda2e00-ad86-4296-a1d4-c7f02366b52e")
     async def update_group(self, id: int, group: schemas.GroupUpdate) -> ResultT[IdResponse]:
-        db_group = await group_dto.get_one_or_404(self.session, id, options=(selectinload(Group.user),))
+        db_group = await group_dto.get_one_or_404(self.session, id, selectinload(Group.user))
         update_group = group.model_dump(exclude_unset=True)
-        if "user_ids" in update_group():
-            db_group = group_dto.update_relationship_field(self.session, db_group, User, "user", group.user_ids)
-        await group_dto.update(self.session, db_group, group, excludes=group.user_ids)
+        if "user_ids" in update_group:
+            db_group = await group_dto.update_relationship_field(self.session, db_group, User, "user", group.user_ids)
+        await group_dto.update(self.session, db_group, group, excludes={"user_ids"})
         return ResultT(data=IdResponse(id=id))
 
     @router.delete("/groups/{id}", operation_id="c4e9e0e8-6b0c-4f6f-9e6c-8d9f9f9f9f9f")
@@ -124,7 +122,7 @@ class RoleCbv:
 
     @router.get("/roles/{id}", operation_id="8057d614-150f-42ee-984c-d0af35796da3")
     async def get_role(self, id: int) -> ResultT[schemas.RoleDetail]:
-        db_role = await role_dto.get_one_or_404(self.session, id, options=(selectinload(Role.permission),))
+        db_role = await role_dto.get_one_or_404(self.session, id, selectinload(Role.permission))
         return ResultT(data=schemas.RoleDetail.model_validate(db_role))
 
     @router.get("/roles", operation_id="c5f793b1-7adf-4b4e-a498-732b0fa7d758")
@@ -134,12 +132,12 @@ class RoleCbv:
 
     @router.put("/roles/{id}", operation_id="2fda2e00-ad86-4296-a1d4-c7f02366b52e")
     async def update_role(self, id: int, role: schemas.RoleUpdate) -> ResultT[IdResponse]:
-        db_role = await role_dto.get_one_or_404(self.session, id, options=(selectinload(Role.permission),))
+        db_role = await role_dto.get_one_or_404(self.session, id, selectinload(Role.permission))
         if "permission_ids" in role.model_dump(exclude_unset=True):
-            db_role = role_dto.update_relationship_field(
+            db_role = await role_dto.update_relationship_field(
                 self.session, db_role, Permission, "permission", role.permission_ids
             )
-        await role_dto.update(self.session, db_role, role, excludes=role.permission_ids)
+        await role_dto.update(self.session, db_role, role, excludes={"permission_ids"})
         return ResultT(data=IdResponse(id=id))
 
     @router.delete("/roles/{id}", operation_id="c4e9e0e8-6b0c-4f6f-9e6c-8d9f9f9f9f9f")

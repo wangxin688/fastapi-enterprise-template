@@ -2,7 +2,7 @@ from datetime import datetime
 from typing import ClassVar
 from uuid import UUID
 
-from sqlalchemy import DateTime, ForeignKey, func, select
+from sqlalchemy import DateTime, ForeignKey, func, select, and_
 from sqlalchemy.dialects.postgresql import JSON
 from sqlalchemy.ext.mutable import MutableDict
 from sqlalchemy.orm import Mapped, column_property, mapped_column, relationship
@@ -26,7 +26,7 @@ class Role(Base, AuditTimeMixin):
     name: Mapped[str]
     slug: Mapped[str]
     description: Mapped[str | None]
-    permission: Mapped[list["Permission"]] = relationship(secondary=RolePermission, backref="role")
+    permission: Mapped[list["Permission"]] = relationship(secondary="role_permission", backref="role")
 
 
 class Permission(Base):
@@ -62,6 +62,7 @@ class User(Base, AuditTimeMixin):
     password: Mapped[str]
     avatar: Mapped[str | None]
     last_login: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    is_active: Mapped[_types.bool_true]
     group_id: Mapped[int] = mapped_column(ForeignKey(Group.id, ondelete="CASCADE"))
     group: Mapped["Group"] = relationship(back_populates="user", passive_deletes=True)
     role_id: Mapped[int] = mapped_column(ForeignKey(Role.id, ondelete="CASCADE"))
@@ -69,11 +70,11 @@ class User(Base, AuditTimeMixin):
     auth_info: Mapped[dict] = mapped_column(MutableDict.as_mutable(JSON))
 
 
-Group.user_count: int = column_property(
-    select(func.count(User.id)).where(User.group_id == Group.id).correlate_except(Group).subquery(),
+Group.user_count = column_property(
+    select(func.count(User.id)).where(User.group_id == Group.id).correlate_except(Group).scalar_subquery(),
     deferred=True,
 )
 Role.permission_count = column_property(
-    select(func.count(Permission.id)).where(Permission.role_id == Role.id).correlate_except(Role).subquery(),
+    select(func.count(Permission.id)).where(and_(RolePermission.role_id == Role.id, RolePermission.permission_id==Permission.id)).correlate_except(Role).scalar_subquery(),
     deferred=True,
 )

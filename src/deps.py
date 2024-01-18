@@ -38,13 +38,22 @@ async def auth(request: Request, session: AsyncSession = Depends(get_session), t
         raise exceptions.TokenExpireError
     user = await session.get(User, token_data.sub, options=[selectinload(User.role)])
     if not user:
-        raise exceptions.NotFoundError(user.__visible_name__[locale_ctx.get()], "id", id)
+        raise exceptions.NotFoundError(User.__visible_name__[locale_ctx.get()], "id", id)
+    check_user_active(user.is_active)
     operation_id = request.scope.get("operation_id")
+    if not operation_id:
+        raise
     privileged = check_privileged_role(user.role.slug, operation_id)
     if privileged:
-        return User
-    check_privileged_role(user.role_id, session, operation_id)
-    return User
+        return user
+    await check_role_permissions(user.role_id, session, operation_id)
+    return user
+
+
+def check_user_active(is_active: bool)->None:
+    if not is_active:
+        raise exceptions.PermissionDenyError
+    return
 
 
 def check_privileged_role(slug: str, operation_id: str) -> bool:
@@ -58,12 +67,12 @@ def check_privileged_role(slug: str, operation_id: str) -> bool:
 async def check_role_permissions(role_id: int, session: AsyncSession, operation_id: str) -> None:
     permissions: list[str] | None = await redis_client.get_cache(name=str(role_id), namespace=CacheNamespace.ROLE_CACHE)
     if not permissions:
-        permissions = (
+        _permissions = (
             await session.scalars(select(RolePermission.permission_id).where(RolePermission.role_id == role_id))
         ).all()
-        if not permissions:
+        if not _permissions:
             raise exceptions.PermissionDenyError
-        permissions = [str(p) for p in permissions]
-        redis_client.set_nx(name=str(role_id), value=permissions, namespace=CacheNamespace.ROLE_CACHE)
+        permissions = [str(p) for p in _permissions]
+        await redis_client.set_nx(name=str(role_id), value=permissions, namespace=CacheNamespace.ROLE_CACHE)
     if operation_id not in permissions:
         raise exceptions.PermissionDenyError
