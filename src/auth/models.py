@@ -2,8 +2,8 @@ from datetime import datetime
 from typing import ClassVar
 from uuid import UUID
 
-from sqlalchemy import DateTime, ForeignKey, and_, func, select
-from sqlalchemy.dialects.postgresql import JSON
+from sqlalchemy import DateTime, ForeignKey, Integer, and_, func, select
+from sqlalchemy.dialects.postgresql import ARRAY, JSON
 from sqlalchemy.ext.mutable import MutableDict
 from sqlalchemy.orm import Mapped, column_property, mapped_column, relationship
 
@@ -18,6 +18,12 @@ class RolePermission(Base):
     permission_id: Mapped[UUID] = mapped_column(ForeignKey("permission.id"), primary_key=True)
 
 
+class RoleMenu(Base):
+    __tablename__ = "role_menu"
+    role_id: Mapped[int] = mapped_column(ForeignKey("role.id"), primary_key=True)
+    menu_id: Mapped[UUID] = mapped_column(ForeignKey("menu.id"), primary_key=True)
+
+
 class Role(Base, AuditTimeMixin):
     __tablename__ = "role"
     __search_fields__: ClassVar = {"name"}
@@ -27,6 +33,7 @@ class Role(Base, AuditTimeMixin):
     slug: Mapped[str]
     description: Mapped[str | None]
     permission: Mapped[list["Permission"]] = relationship(secondary="role_permission", backref="role")
+    menu: Mapped[list["Menu"]] = relationship(secondary="role_menu", backref="role")
 
 
 class Permission(Base):
@@ -68,6 +75,25 @@ class User(Base, AuditTimeMixin):
     role_id: Mapped[int] = mapped_column(ForeignKey(Role.id, ondelete="CASCADE"))
     role: Mapped["Role"] = relationship(backref="user", passive_deletes=True)
     auth_info: Mapped[dict | None] = mapped_column(MutableDict.as_mutable(JSON))
+
+
+class Menu(Base):
+    __tablename__ = "menu"
+    __visible_name__ = {"en_US": "Menu", "zh_CN": "菜单"}
+    id: Mapped[_types.int_pk]
+    name: Mapped[str] = mapped_column(unique=True, comment="the unique name of route")
+    hidden: Mapped[_types.bool_false]
+    redirect: Mapped[str] = mapped_column(comment="redirect url for the route")
+    hideChildrenInMenu: Mapped[_types.bool_false] = mapped_column(comment="hide children in menu force or not")  # noqa: N815
+    order: Mapped[int]
+    title: Mapped[str] = mapped_column(comment="the title of the route, 面包屑")
+    icon: Mapped[str | None]
+    keepAlive: Mapped[_types.bool_false] = mapped_column(comment="cache route, 开启multi-tab时为true")  # noqa: N815
+    hiddenHeaderContent: Mapped[_types.bool_false] = mapped_column(comment="隐藏pageheader页面带的面包屑和标题栏")  # noqa: N815
+    permission: Mapped[list[int] | None] = mapped_column(ARRAY(Integer, dimensions=1))
+    parent_id: Mapped[int | None] = mapped_column(ForeignKey("menu.id", ondelete="CASCADE"))
+    parent: Mapped["Menu"] = relationship(back_populates="children")
+    children: Mapped[list["Menu"]] = relationship(back_populates="parent")
 
 
 Group.user_count = column_property(
