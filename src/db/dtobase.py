@@ -240,7 +240,7 @@ class DtoBase(Generic[ModelT, CreateSchemaType, UpdateSchemaType, QuerySchemaTyp
                         stmt = stmt.where(
                             or_(
                                 getattr(self.model, key)["zh_CN"].in_(value),
-                                getattr(self.model, key)["zh_TW"].in_(value),
+                                getattr(self.model, key)["en_US"].in_(value),
                             )
                         )
                     else:
