@@ -236,7 +236,7 @@ class DtoBase(Generic[ModelT, CreateSchemaType, UpdateSchemaType, QuerySchemaTyp
                 stmt = stmt.where(getattr(self.model, key).is_(value))
             elif isinstance(value, list):
                 if value:
-                    if key in self.model.__i18n_files__ and type(getattr(self.model, key).type) is HSTORE:
+                    if key in self.model.__i18n_fields__ and type(getattr(self.model, key).type) is HSTORE:
                         stmt = stmt.where(
                             or_(
                                 getattr(self.model, key)["zh_CN"].in_(value),
