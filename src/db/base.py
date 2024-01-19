@@ -11,7 +11,7 @@ from src.db._types import GUID
 class Base(DeclarativeBase):
     __visible_name__: ClassVar[VisibleName] = {"en_US": "base", "zh_CN": "base"}
     __search_fields__: ClassVar[set[str]] = set()
-    __i18n_files__: ClassVar[set[str]] = set()
+    __i18n_fields__: ClassVar[set[str]] = set()
     type_annotation_map: ClassVar = {UUID: GUID}
 
     def dict(self, exclude: set[str] | None = None, native_dict: bool = False) -> dict[str, Any]:
