@@ -81,3 +81,7 @@ Role.permission_count = column_property(
     .scalar_subquery(),
     deferred=True,
 )
+Role.user_count = column_property(
+    select(func.count(User.id)).where(User.role_id == Role.id).correlate_except(Role).scalar_subquery(),
+    deferred=True,
+)

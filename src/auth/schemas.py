@@ -25,6 +25,18 @@ class Permission(BaseModel):
     tag: str
 
 
+class PermissionCreate(BaseModel):
+    ...
+
+
+class PermissionUpdate(QueryParams):
+    ...
+
+
+class PermissionQuery(QueryParams):
+    ...
+
+
 class UserBase(BaseModel):
     name: str
     email: EmailStr | None = None
@@ -103,6 +115,7 @@ class GroupDetail(GroupBase, AuditTimeBase):
 class RoleDetail(RoleBase, AuditTimeBase):
     id: int
     permission: list[Permission]
+    user_count: int
 
 
 class RoleList(RoleBase, AuditTimeBase):

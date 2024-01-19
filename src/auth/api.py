@@ -78,7 +78,7 @@ class GroupCbv:
 
     @router.get("/groups/{id}", operation_id="8057d614-150f-42ee-984c-d0af35796da3")
     async def get_group(self, id: int) -> ResultT[schemas.GroupDetail]:
-        db_group = await group_dto.get_one_or_404(self.session, id)
+        db_group = await group_dto.get_one_or_404(self.session, id, undefer_load=True)
         return ResultT(data=schemas.GroupDetail.model_validate(db_group))
 
     @router.get("/groups", operation_id="c5f793b1-7adf-4b4e-a498-732b0fa7d758")
@@ -120,7 +120,7 @@ class RoleCbv:
 
     @router.get("/roles/{id}", operation_id="8057d614-150f-42ee-984c-d0af35796da3")
     async def get_role(self, id: int) -> ResultT[schemas.RoleDetail]:
-        db_role = await role_dto.get_one_or_404(self.session, id, selectinload(Role.permission))
+        db_role = await role_dto.get_one_or_404(self.session, id, selectinload(Role.permission), undefer_load=True)
         return ResultT(data=schemas.RoleDetail.model_validate(db_role))
 
     @router.get("/roles", operation_id="c5f793b1-7adf-4b4e-a498-732b0fa7d758")

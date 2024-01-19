@@ -4,6 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.auth import schemas
 from src.auth.models import Group, Permission, Role, User
+from src.auth.schemas import PermissionCreate, PermissionUpdate
 from src.db.dtobase import DtoBase
 
 
@@ -53,6 +54,33 @@ class RoleDto(DtoBase[Role, schemas.RoleCreate, schemas.RoleUpdate, schemas.Role
         return await self.commit(session, new_role)
 
 
+class PermissionDto(DtoBase[Permission, schemas.PermissionCreate, schemas.PermissionUpdate, schemas.PermissionQuery]):
+    async def create(
+        self,
+        session: AsyncSession,
+        obj_in: PermissionCreate,
+        excludes: set[str] | None = None,
+        exclude_unset: bool = False,
+        exclude_none: bool = False,
+        commit: bool | None = True,
+    ) -> Permission:
+        raise NotImplementedError
+
+    async def update(
+        self,
+        session: AsyncSession,
+        db_obj: Permission,
+        obj_in: PermissionUpdate,
+        excludes: set[str] | None = None,
+        commit: bool | None = True,
+    ) -> Permission:
+        raise NotImplementedError
+
+    async def delete(self, session: AsyncSession, db_obj: Permission) -> None:
+        raise NotImplementedError
+
+
 user_dto = UserDto(User)
 group_dto = GroupDto(Group)
 role_dto = RoleDto(Role)
+permission_dto = PermissionDto(Permission)

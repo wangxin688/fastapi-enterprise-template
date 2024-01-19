@@ -71,19 +71,17 @@ async def inspect_table(table_name: str) -> InspectorTableConstraint:
 class DtoBase(Generic[ModelT, CreateSchemaType, UpdateSchemaType, QuerySchemaType]):
     id_attribute: str = "id"
 
-    def __init__(self, model: type[ModelT], undefer_load: bool = False) -> None:
+    def __init__(self, model: type[ModelT]) -> None:
         """
         Initializes a new instance of the class.
 
         Args:
             model (type[ModelT]): The model to be used.
-            undefer_load (bool, optional): Whether to undefer the loading of the model. Defaults to False.
 
         Returns:
             None
         """
         self.model = model
-        self.undefer_load = undefer_load
 
     @overload
     @classmethod
@@ -245,15 +243,15 @@ class DtoBase(Generic[ModelT, CreateSchemaType, UpdateSchemaType, QuerySchemaTyp
                         )
                     else:
                         stmt = stmt.where(getattr(self.model, key).in_(value))
-                else:
-                    stmt = stmt.where(getattr(self.model, key).in_(value))
             elif value is None:
                 stmt = stmt.where(getattr(self.model, key).is_(None))
             else:
                 stmt = stmt.where(getattr(self.model, key) == value)
         return stmt
 
-    def _apply_selectinload(self, stmt: Select[tuple[ModelT]], *options: ExecutableOption) -> Select[tuple[ModelT]]:
+    def _apply_selectinload(
+        self, stmt: Select[tuple[ModelT]], *options: ExecutableOption, undefer_load: bool = True
+    ) -> Select[tuple[ModelT]]:
         """
         Apply the selectinload option to a SQLAlchemy select statement.
 
@@ -266,7 +264,7 @@ class DtoBase(Generic[ModelT, CreateSchemaType, UpdateSchemaType, QuerySchemaTyp
 
         """
         stmt = stmt.options(*options) if options else stmt
-        return stmt.options(undefer("*")) if self.undefer_load else stmt
+        return stmt.options(undefer("*")) if undefer_load else stmt
 
     def _apply_list(
         self, stmt: Select[tuple[ModelT]], query: QuerySchemaType, excludes: set[str] | None = None
@@ -307,7 +305,7 @@ class DtoBase(Generic[ModelT, CreateSchemaType, UpdateSchemaType, QuerySchemaTyp
             raise NotFoundError(self.model.__visible_name__[locale_ctx.get()], column, value)
         return instance
 
-    def _check_exist(self, instance: ModelT | Row[Any] | None, column: str, value: Any) -> None:
+    def _check_exist(self, instance: ModelT | int | None, column: str, value: Any) -> None:
         """
         Check if the given instance exists in the table.
 
@@ -435,14 +433,9 @@ class DtoBase(Generic[ModelT, CreateSchemaType, UpdateSchemaType, QuerySchemaTyp
         uniq_args = inspections.get("unique_constraints")
         if not uniq_args:
             return
-
-        # Get the record dictionary
         record_dict = record.model_dump(exclude_unset=True)
-
-        # Iterate over each unique constraint
         for arg in uniq_args:
             uq: dict[str, Any] = {}
-
             # Check if all columns in the constraint exist in the record dictionary
             for column in arg:
                 if column in record_dict:
@@ -454,8 +447,6 @@ class DtoBase(Generic[ModelT, CreateSchemaType, UpdateSchemaType, QuerySchemaTyp
                 else:
                     uq = {}
                     break
-
-            # If the unique constraint is valid, check it against the database
             if uq:
                 await self._check_unique_constraints(session, uq)
 
@@ -523,7 +514,7 @@ class DtoBase(Generic[ModelT, CreateSchemaType, UpdateSchemaType, QuerySchemaTyp
                 self._check_not_found(fk_result, column, value)
 
     async def list_and_count(
-        self, session: AsyncSession, query: QuerySchemaType, *options: ExecutableOption
+        self, session: AsyncSession, query: QuerySchemaType, *options: ExecutableOption, undefer_load: bool = True
     ) -> tuple[int, Sequence[ModelT]]:
         """
         Asynchronously retrieves a list of items from the database and returns the count and results.
@@ -545,7 +536,7 @@ class DtoBase(Generic[ModelT, CreateSchemaType, UpdateSchemaType, QuerySchemaTyp
             stmt = self._apply_pagination(stmt, query.limit, query.offset)
         if query.order_by and query.order:
             stmt = self._apply_order_by(stmt, query.order_by, query.order)
-        stmt = self._apply_selectinload(stmt, *options)
+        stmt = self._apply_selectinload(stmt, *options, undefer_load=undefer_load)
         _count = await session.scalar(c_stmt)
         results = (await session.scalars(stmt)).all()
         return _count if _count is not None else 0, results
@@ -640,21 +631,22 @@ class DtoBase(Generic[ModelT, CreateSchemaType, UpdateSchemaType, QuerySchemaTyp
         """
         local_relationship_values: Sequence[RelationT] = getattr(obj, relationship_name)
         local_fk_value_ids: list[PkIdT] = [getattr(v, relationship_pk_name) for v in local_relationship_values]
-        for fk_value in local_relationship_values[::-1]:
-            if getattr(fk_value, relationship_pk_name) not in fk_values:
-                getattr(obj, relationship_name).remove(fk_value)
         if fk_values:
+            for fk_value in local_relationship_values[::-1]:
+                if getattr(fk_value, relationship_pk_name) not in fk_values:
+                    getattr(obj, relationship_name).remove(fk_value)
             for fk_value in fk_values:
+                target_dto = DtoBase(model=m2m_model)
                 if fk_value not in local_fk_value_ids:
-                    target_obj = await session.get(m2m_model, fk_value)
-                    if not target_obj:
-                        raise NotFoundError(
-                            m2m_model.__visible_name__[locale_ctx.get()], relationship_pk_name, fk_value
-                        )
+                    target_obj = await target_dto.get_one_or_404(session, fk_value)
                     getattr(obj, relationship_name).append(target_obj)
+        else:
+            setattr(obj, relationship_name, None)
         return obj
 
-    async def get_one_or_404(self, session: AsyncSession, pk_id: PkIdT, *options: ExecutableOption) -> ModelT:
+    async def get_one_or_404(
+        self, session: AsyncSession, pk_id: PkIdT, *options: ExecutableOption, undefer_load: bool = False
+    ) -> ModelT:
         """
         Retrieves a single instance of ModelT from the database based on the provided \n
         primary key (pk_id) and optional query options (options).
@@ -674,7 +666,7 @@ class DtoBase(Generic[ModelT, CreateSchemaType, UpdateSchemaType, QuerySchemaTyp
         id_str = self.get_id_attribute_value(self.model)
         stmt = stmt.where(id_str == pk_id)
         if options:
-            stmt = self._apply_selectinload(stmt, *options)
+            stmt = self._apply_selectinload(stmt, *options, undefer_load=undefer_load)
         result = (await session.scalars(stmt)).one_or_none()
         if not result:
             raise NotFoundError(self.model.__visible_name__[locale_ctx.get()], self.id_attribute, pk_id)
@@ -695,68 +687,36 @@ class DtoBase(Generic[ModelT, CreateSchemaType, UpdateSchemaType, QuerySchemaTyp
         Raises:
             ExistError: If a record with the given value already exists in the database.
         """
-        id_str = self.get_id_attribute_value(self.model)
-        stmt = (
-            self._get_base_stmt()
-            .where(
-                getattr(self.model, field).is_(value)
-                if isinstance(value, bool) or value is None
-                else getattr(self.model, field) == value
-            )
-            .with_only_columns(func.count(id_str), maintain_column_forms=True)
-        )
 
-        result = (await session.execute(stmt)).one_or_none()
+        stmt = self._get_base_stmt()
+        stmt = self._apply_filter(stmt=stmt, filters={field: value})
+        result = await session.scalar(stmt)
         self._check_exist(result, field, value)
 
-    async def get_one_by_field(self, session: AsyncSession, field: str, value: Any) -> ModelT | None:
-        stmt = self._get_base_stmt().where(
-            getattr(self.model, field).is_(value)
-            if isinstance(value, bool) or value is None
-            else getattr(self.model, field) == value
-        )
-        return await session.scalar(stmt)
-
-    async def get_many_by_field(self, session: AsyncSession, field: str, value: str) -> Sequence[ModelT]:
-        stmt = self._get_base_stmt().where(
-            getattr(self.model, field).is_(value)
-            if isinstance(value, bool) or value is None
-            else getattr(self.model, field) == value
-        )
-        return (await session.scalars(stmt)).all()
-
-    async def get_by_filters(
-        self, session: AsyncSession, filters: dict[str, Any], *options: ExecutableOption
-    ) -> Sequence[ModelT]:
-        stmt = self._get_base_stmt()
-        stmt = self._apply_filter(stmt, filters)
-        stmt = self._apply_selectinload(stmt, *options)
-        return (await session.scalars(stmt)).all()
-
     async def get_one_by_filter(
-        self, session: AsyncSession, filters: dict[str, Any], *options: ExecutableOption
+        self, session: AsyncSession, filters: dict[str, Any], *options: ExecutableOption, undefer_load: bool = False
     ) -> ModelT | None:
         stmt = self._get_base_stmt()
         stmt = self._apply_filter(stmt=stmt, filters=filters)
-        stmt = self._apply_selectinload(stmt, *options)
+        stmt = self._apply_selectinload(stmt, *options, undefer_load=undefer_load)
         return (await session.scalars(stmt)).one_or_none()
 
     async def get_multi_by_filter(
-        self, session: AsyncSession, filters: dict[str, Any], *options: ExecutableOption
+        self, session: AsyncSession, filters: dict[str, Any], *options: ExecutableOption, undefer_load: bool = False
     ) -> Sequence[ModelT]:
         stmt = self._get_base_stmt()
         stmt = self._apply_filter(stmt=stmt, filters=filters)
-        stmt = self._apply_selectinload(stmt, *options)
+        stmt = self._apply_selectinload(stmt, *options, undefer_load=undefer_load)
         return (await session.scalars(stmt)).all()
 
-    async def get_multi_or_404(
-        self, session: AsyncSession, pk_ids: list[PkIdT], *options: ExecutableOption
+    async def get_multi_by_pks_or_404(
+        self, session: AsyncSession, pk_ids: list[PkIdT], *options: ExecutableOption, undefer_load: bool = False
     ) -> Sequence[ModelT]:
         stmt = self._get_base_stmt()
         id_str = self.get_id_attribute_value(self.model)
         stmt = stmt.where(id_str.in_(pk_ids))
         if options:
-            stmt = self._apply_selectinload(stmt, *options)
+            stmt = self._apply_selectinload(stmt, *options, undefer_load=undefer_load)
         results = (await session.scalars(stmt)).all()
         if not results:
             raise NotFoundError(self.model.__visible_name__[locale_ctx.get()], self.id_attribute, pk_ids)
