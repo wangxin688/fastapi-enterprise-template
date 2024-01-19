@@ -67,7 +67,7 @@ class User(Base, AuditTimeMixin):
     group: Mapped["Group"] = relationship(back_populates="user", passive_deletes=True)
     role_id: Mapped[int] = mapped_column(ForeignKey(Role.id, ondelete="CASCADE"))
     role: Mapped["Role"] = relationship(backref="user", passive_deletes=True)
-    auth_info: Mapped[dict] = mapped_column(MutableDict.as_mutable(JSON))
+    auth_info: Mapped[dict | None] = mapped_column(MutableDict.as_mutable(JSON))
 
 
 Group.user_count = column_property(
