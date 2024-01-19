@@ -279,7 +279,15 @@ class DtoBase(Generic[ModelT, CreateSchemaType, UpdateSchemaType, QuerySchemaTyp
             stmt = self._apply_filter(stmt, filters)
         return stmt
 
-    def _check_not_found(self, instance: ModelT | Row[Any] | None, column: str, value: Any) -> None:
+    @overload
+    def _check_not_found(self, instance: ModelT | None, column: str, value: Any) -> ModelT:
+        ...
+
+    @overload
+    def _check_not_found(self, instance: Row[Any] | None, column: str, value: Any) -> Row[Any]:
+        ...
+
+    def _check_not_found(self, instance: ModelT | Row[Any] | None, column: str, value: Any) -> ModelT | Row[Any]:
         """
         Check if the given instance is not found in the specified table.
 
@@ -297,6 +305,7 @@ class DtoBase(Generic[ModelT, CreateSchemaType, UpdateSchemaType, QuerySchemaTyp
         """
         if not instance:
             raise NotFoundError(self.model.__visible_name__[locale_ctx.get()], column, value)
+        return instance
 
     def _check_exist(self, instance: ModelT | Row[Any] | None, column: str, value: Any) -> None:
         """
@@ -756,6 +765,24 @@ class DtoBase(Generic[ModelT, CreateSchemaType, UpdateSchemaType, QuerySchemaTyp
             if id_value not in pk_ids:
                 raise NotFoundError(self.model.__visible_name__[locale_ctx.get()], self.id_attribute, pk_ids)
         return results
+
+    async def get_one_and_delete(self, session: AsyncSession, pk_id: PkIdT) -> None:
+        stmt = self._get_base_stmt()
+        id_str = self.get_id_attribute_value(self.model)
+        result = (await session.scalars(stmt.where(id_str == pk_id))).one_or_none()
+        result = self._check_not_found(result, self.id_attribute, pk_id)
+        await self.delete(session, result)
+
+    async def get_multi_and_delete(self, session: AsyncSession, pk_ids: list[PkIdT]) -> None:
+        stmt = self._get_base_stmt()
+        id_str = self.get_id_attribute_value(self.model)
+        results = (await session.scalars(stmt.where(id_str.in_(pk_ids)))).all()
+        for r in results:
+            id_value = self.get_id_attribute_value(r)
+            if id_value not in pk_ids:
+                raise NotFoundError(self.model.__visible_name__[locale_ctx.get()], self.id_attribute, id_value)
+            await session.delete(r)
+        await session.commit()
 
     async def commit(self, session: AsyncSession, obj: ModelT) -> ModelT:
         """
