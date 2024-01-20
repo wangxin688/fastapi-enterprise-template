@@ -26,7 +26,7 @@ class Settings(BaseSettings):
 
     WEB_SENTRY_DSN: str | None = None
     CELERY_SENTRY_DSN: str | None = None
-    SENTRY_SAMPLE_RATE: float | None = 1.0
+    SENTRY_SAMPLE_RATE: float = 1.0
     SENTRY_TRACES_SAMPLE_RATE: float | None = 1.0
 
     SQLALCHEMY_DATABASE_URI: str

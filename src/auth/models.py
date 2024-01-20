@@ -5,7 +5,8 @@ from uuid import UUID
 from sqlalchemy import DateTime, ForeignKey, Integer, and_, func, select
 from sqlalchemy.dialects.postgresql import ARRAY, JSON
 from sqlalchemy.ext.mutable import MutableDict
-from sqlalchemy.orm import Mapped, column_property, mapped_column, relationship
+from sqlalchemy.orm import Mapped, backref, column_property, mapped_column, relationship
+from sqlalchemy.orm.collections import attribute_mapped_collection
 
 from src.db import _types
 from src.db.base import Base
@@ -32,8 +33,10 @@ class Role(Base, AuditTimeMixin):
     name: Mapped[str]
     slug: Mapped[str]
     description: Mapped[str | None]
-    permission: Mapped[list["Permission"]] = relationship(secondary="role_permission", backref="role")
-    menu: Mapped[list["Menu"]] = relationship(secondary="role_menu", backref="role")
+    permission: Mapped[list["Permission"]] = relationship(
+        secondary="role_permission", back_populates="role", lazy="joined"
+    )
+    menu: Mapped[list["Menu"]] = relationship(secondary="role_menu", back_populates="role", lazy="joined")
 
 
 class Permission(Base):
@@ -44,6 +47,7 @@ class Permission(Base):
     url: Mapped[str]
     method: Mapped[str]
     tag: Mapped[str]
+    role: Mapped[list["Role"]] = relationship(secondary="role_permission", back_populates="permission")
 
 
 class Group(Base, AuditTimeMixin):
@@ -80,7 +84,7 @@ class User(Base, AuditTimeMixin):
 class Menu(Base):
     __tablename__ = "menu"
     __visible_name__ = {"en_US": "Menu", "zh_CN": "菜单"}
-    id: Mapped[_types.int_pk]
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
     name: Mapped[str] = mapped_column(unique=True, comment="the unique name of route")
     hidden: Mapped[_types.bool_false]
     redirect: Mapped[str] = mapped_column(comment="redirect url for the route")
@@ -91,9 +95,13 @@ class Menu(Base):
     keepAlive: Mapped[_types.bool_false] = mapped_column(comment="cache route, 开启multi-tab时为true")  # noqa: N815
     hiddenHeaderContent: Mapped[_types.bool_false] = mapped_column(comment="隐藏pageheader页面带的面包屑和标题栏")  # noqa: N815
     permission: Mapped[list[int] | None] = mapped_column(ARRAY(Integer, dimensions=1))
-    parent_id: Mapped[int | None] = mapped_column(ForeignKey("menu.id", ondelete="CASCADE"))
-    parent: Mapped["Menu"] = relationship(back_populates="children")
-    children: Mapped[list["Menu"]] = relationship(back_populates="parent")
+    parent_id: Mapped[int | None] = mapped_column(ForeignKey(id, ondelete="CASCADE"))
+    children: Mapped[list["Menu"]] = relationship(
+        cascade="all, delete-orphan",
+        backref=backref("parent", remote_side=id),
+        collection_class=attribute_mapped_collection("name"),
+    )
+    role: Mapped[list["Role"]] = relationship(back_populates="menu", secondary="role_menu")
 
 
 Group.user_count = column_property(

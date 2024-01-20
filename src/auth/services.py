@@ -1,16 +1,27 @@
 from collections.abc import Sequence
 
-from sqlalchemy import select
+from fastapi.security import OAuth2PasswordRequestForm
+from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.auth import schemas
 from src.auth.models import Group, Menu, Permission, Role, User
 from src.auth.schemas import PermissionCreate, PermissionUpdate
+from src.context import locale_ctx
 from src.db.dtobase import DtoBase
+from src.exceptions import NotFoundError, PermissionDenyError
+from src.security import verify_password
 
 
 class UserDto(DtoBase[User, schemas.UserCreate, schemas.UserUpdate, schemas.UserQuery]):
-    ...
+    async def verify_user(self, session: AsyncSession, user: OAuth2PasswordRequestForm) -> User:
+        stmt = self._get_base_stmt().where(or_(self.model.email == user.username, self.model.phone == user.username))
+        db_user = await session.scalar(stmt)
+        if not db_user:
+            raise NotFoundError(self.model.__visible_name__[locale_ctx.get()], "username", user.username)
+        if not verify_password(user.password, db_user.password):
+            raise PermissionDenyError
+        return db_user
 
 
 class GroupDto(DtoBase[Group, schemas.GroupCreate, schemas.GroupUpdate, schemas.GroupQuery]):

@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, status
+from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -11,22 +12,36 @@ from src.auth.services import group_dto, role_dto, user_dto
 from src.cbv import cbv
 from src.deps import auth, get_session
 from src.exceptions import GenerError
+from src.security import generate_access_token_response
 
 router = APIRouter()
 
 
+@router.post("/pwd-login", operation_id="c5f719b1-7adf-4b4e-a498-732b8da7d758")
+async def login_pwd(
+    user: OAuth2PasswordRequestForm = Depends(),
+    session: AsyncSession = Depends(get_session),
+) -> schemas.AccessToken:
+    result = await user_dto.verify_user(session, user)
+    return generate_access_token_response(result.id)
+
+
 @cbv(router)
-class UserCbv:
+class UserAPI:
     user: User = Depends(auth)
     session: AsyncSession = Depends(get_session)
 
-    @router.post("/users", operation_id="5091fff6-1adc-4a22-8a8c-ef0107122df7", summary="Create new user/创建新用户")
+    @router.post("/users", operation_id="5091fff6-1adc-4a22-8a8c-ef0107122df7", summary="创建新用户/Create new user")
     async def create_user(self, user: schemas.UserCreate) -> IdResponse:
         new_user = await user_dto.create(self.session, user)
         result = await user_dto.commit(self.session, new_user)
         return IdResponse(id=result.id)
 
-    @router.get("/users/{id}", operation_id="276a8c69-2f5c-40d5-91c4-d0ddd1c24766")
+    @router.get(
+        "/users/{id}",
+        operation_id="276a8c69-2f5c-40d5-91c4-d0ddd1c24766",
+        summary="获取单个用户/Get user information by ID",
+    )
     async def get_user(self, id: int) -> schemas.UserDetail:
         db_user = await user_dto.get_one_or_404(
             self.session,
@@ -37,7 +52,7 @@ class UserCbv:
         return schemas.UserDetail.model_validate(db_user)
 
     @router.get("/users", operation_id="2485e2a2-4d81-4601-a6fd-c633b23ce5fc")
-    async def get_users(self, query: schemas.UserQuery) -> ListT[list[schemas.UserDetail]]:
+    async def get_users(self, query: schemas.UserQuery = Depends()) -> ListT[list[schemas.UserDetail]]:
         count, results = await user_dto.list_and_count(
             self.session,
             query,
@@ -63,7 +78,7 @@ class UserCbv:
 
 
 @cbv(router)
-class GroupCbv:
+class GroupAPI:
     user: User = Depends(auth)
     session: AsyncSession = Depends(get_session)
 
@@ -82,7 +97,7 @@ class GroupCbv:
         return schemas.GroupDetail.model_validate(db_group)
 
     @router.get("/groups", operation_id="a1d1f8f1-4d4d-4fab-868b-3f977df26e05")
-    async def get_groups(self, query: schemas.GroupQuery) -> ListT[list[schemas.GroupDetail]]:
+    async def get_groups(self, query: schemas.GroupQuery = Depends()) -> ListT[list[schemas.GroupDetail]]:
         count, results = await group_dto.list_and_count(self.session, query)
         return ListT(count=count, results=[schemas.GroupDetail.model_validate(r) for r in results])
 
@@ -103,7 +118,7 @@ class GroupCbv:
 
 
 @cbv(router)
-class RoleCbv:
+class RoleAPI:
     user: User = Depends(auth)
     session: AsyncSession = Depends(get_session)
 
@@ -124,7 +139,7 @@ class RoleCbv:
         return schemas.RoleDetail.model_validate(db_role)
 
     @router.get("/roles", operation_id="c5f793b1-7adf-4b4e-a498-732b0fa7d758")
-    async def get_roles(self, query: schemas.RoleQuery) -> ListT[list[schemas.RoleList]]:
+    async def get_roles(self, query: schemas.RoleQuery = Depends()) -> ListT[list[schemas.RoleList]]:
         count, results = await role_dto.list_and_count(self.session, query)
         return ListT(count=count, results=[schemas.RoleList.model_validate(r) for r in results])
 
