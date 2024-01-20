@@ -69,6 +69,42 @@ class RoleBrief(BaseModel):
     name: str
 
 
+class MenuBase(BaseModel):
+    name: str
+    hidden: bool
+    redirect: str
+    hideChildrenInMenu: bool
+    order: int
+    title: str
+    icon: str | None
+    keepAlive: bool
+    hiddenHeaderContent: bool
+    permission: list[int]
+    parent_id: int
+
+
+class MenuCreate(MenuBase):
+    id: int
+
+
+class MenuUpdate(BaseModel):
+    name: str | None
+    hidden: bool | None
+    redirect: str | None
+    hideChildrenInMenu: bool | None
+    order: int | None
+    title: str | None
+    icon: str | None
+    keepAlive: bool | None
+    hiddenHeaderContent: bool | None
+    permission: list[int] | None
+    parent_id: int | None
+
+
+class MenuQuery(QueryParams):
+    ...
+
+
 class UserCreate(UserBase):
     group_id: int
     role_id: int | None = None

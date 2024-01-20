@@ -1,9 +1,10 @@
 from collections.abc import Sequence
 
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.auth import schemas
-from src.auth.models import Group, Permission, Role, User
+from src.auth.models import Group, Menu, Permission, Role, User
 from src.auth.schemas import PermissionCreate, PermissionUpdate
 from src.db.dtobase import DtoBase
 
@@ -78,6 +79,11 @@ class PermissionDto(DtoBase[Permission, schemas.PermissionCreate, schemas.Permis
 
     async def delete(self, session: AsyncSession, db_obj: Permission) -> None:
         raise NotImplementedError
+
+
+class MenuDto(DtoBase[Menu, schemas.MenuCreate, schemas.MenuUpdate, schemas.MenuQuery]):
+    async def get_all(self, session: AsyncSession) -> Sequence[Menu]:
+        return (await session.scalars(select(self.model))).all()
 
 
 user_dto = UserDto(User)

@@ -69,6 +69,7 @@ fixable = ["ALL"]
 "api.py" = ["A002", "B008"]
 "deps.py" = ["B008"]
 "src/internal/api.py" = ["ARG001"]
+"src/auth/schemas.py" = ["N815"] # frontend menu
 
 [tool.ruff.flake8-bugbear]
 extend-immutable-calls=[
