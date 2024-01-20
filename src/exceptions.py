@@ -1,5 +1,6 @@
-from ipaddress import UUID, IPv4Address, IPv4Interface, IPv4Network, IPv6Address, IPv6Interface, IPv6Network
+from ipaddress import IPv4Address, IPv4Interface, IPv4Network, IPv6Address, IPv6Interface, IPv6Network
 from typing import Any
+from uuid import UUID
 
 from fastapi import status
 

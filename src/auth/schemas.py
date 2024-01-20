@@ -1,7 +1,6 @@
 from datetime import datetime
 from uuid import UUID
 
-from pydantic import EmailStr
 from pydantic_extra_types.phone_numbers import PhoneNumber
 
 from src._types import AuditTimeBase, BaseModel, QueryParams
@@ -39,7 +38,7 @@ class PermissionQuery(QueryParams):
 
 class UserBase(BaseModel):
     name: str
-    email: EmailStr | None = None
+    email: str | None = None
     phone: PhoneNumber | None = None
     avatar: str | None = None
 
@@ -76,7 +75,7 @@ class MenuBase(BaseModel):
     hideChildrenInMenu: bool
     order: int
     title: str
-    icon: str | None
+    icon: str | None = None
     keepAlive: bool
     hiddenHeaderContent: bool
     permission: list[int]
@@ -88,17 +87,17 @@ class MenuCreate(MenuBase):
 
 
 class MenuUpdate(BaseModel):
-    name: str | None
-    hidden: bool | None
-    redirect: str | None
-    hideChildrenInMenu: bool | None
-    order: int | None
-    title: str | None
-    icon: str | None
-    keepAlive: bool | None
-    hiddenHeaderContent: bool | None
-    permission: list[int] | None
-    parent_id: int | None
+    name: str | None = None
+    hidden: bool | None = None
+    redirect: str | None = None
+    hideChildrenInMenu: bool | None = None
+    order: int | None = None
+    title: str | None = None
+    icon: str | None = None
+    keepAlive: bool | None = None
+    hiddenHeaderContent: bool | None = None
+    permission: list[int] | None = None
+    parent_id: int | None = None
 
 
 class MenuQuery(QueryParams):

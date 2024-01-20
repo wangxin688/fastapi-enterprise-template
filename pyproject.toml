@@ -10,7 +10,6 @@ dependencies = [
     "alembic>=1.13.1",
     "sqlalchemy>=2.0.25",
     "pydantic-settings>=2.1.0",
-    "pydantic-extra-types>=2.3.0",
     "uvicorn[standard]>=0.25.0",
     "pyjwt>=2.8.0",
     "pandas>=2.1.4",
@@ -70,6 +69,8 @@ fixable = ["ALL"]
 "deps.py" = ["B008"]
 "src/internal/api.py" = ["ARG001"]
 "src/auth/schemas.py" = ["N815"] # frontend menu
+"alembic/*.py" = ["INP001", "UP007"]
+"__init__.py" = ["F403"]
 
 [tool.ruff.flake8-bugbear]
 extend-immutable-calls=[

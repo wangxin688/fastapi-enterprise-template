@@ -1,4 +1,4 @@
-from src.auth.models import Group, Permission, Role, RolePermission, User  # noqa: F401
+from src.auth.models import *
 from src.db.base import Base
 
 

@@ -10,7 +10,6 @@ async_engine = create_async_engine(
     url=settings.SQLALCHEMY_DATABASE_URI,
     pool_pre_ping=True,
     future=True,
-    connection_args={"server_settings": {"jit": "off"}},
     pool_size=settings.DATABASE_POOL_SIZE,
     max_overflow=settings.DATABASE_POOL_MAX_OVERFLOW,
 )

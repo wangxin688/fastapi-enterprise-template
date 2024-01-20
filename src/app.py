@@ -41,9 +41,6 @@ def create_app() -> FastAPI:
         version=settings.VERSION,
         summary=settings.DESCRIPTION,
         description=openapi_description,
-        docs_url=None,
-        redoc_url=None,
-        swagger_ui_init_oauth={},
         lifespan=lifespan,
     )
     app.include_router(router, prefix="/api")
@@ -55,7 +52,10 @@ def create_app() -> FastAPI:
         CORSMiddleware,
         allow_origins=settings.BACKEND_CORS,
         allow_credentials=True,
-        all_methods=settings.BACKEND_CORS,
-        allow_headers=settings.BACKEND_CORS,
+        allow_methods=["*"],
+        allow_headers=["*"],
     )
     return app
+
+
+app = create_app()

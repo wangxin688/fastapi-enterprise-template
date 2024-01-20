@@ -16,14 +16,9 @@ from src.context import locale_ctx, request_id_ctx
 from src.i18n import ACCEPTED_LANGUAGES
 
 
-def _get_default_id() -> str:
-    return str(uuid.uuid4())
-
-
 @dataclass
 class RequestMiddleware(BaseHTTPMiddleware):
     app: ASGIApp
-    get_default_id_func = _get_default_id
     dispatch_func: Callable = field(init=False)
     csv_mime: str = "text/csv"
     time_header = "x-request-time"
@@ -35,7 +30,7 @@ class RequestMiddleware(BaseHTTPMiddleware):
 
     async def dispatch(self, request: Request, call_next: RequestResponseEndpoint) -> Response:
         start_time = time.time()
-        request_id = request.headers.get(request_id_ctx.name, self.get_default_id_func())
+        request_id = str(uuid.uuid4())
         request_id_ctx.set(request_id)
         language = request.headers.get(locale_ctx.name, locale_ctx.get())
         if language not in ACCEPTED_LANGUAGES:

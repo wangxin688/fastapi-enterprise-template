@@ -9,11 +9,11 @@ services:
       - ./data/redis:/var/lib/redis
     command: redis-server --requirepass ${REDIS_DEFAULT_PASS}  # --notify-keyspace-events Ex
     env_file:
-      - .env_docker
+      - .env
   postgres:
     image: postgres:latest
     ports:
-      - "{$DEFAULT_DB_PORT}:5432"
+      - "${DEFAULT_DB_PORT}:5432"
     volumes:
       - ./data/postgres:/var/lib/postgresql/data
     environment:
@@ -21,4 +21,4 @@ services:
       - POSTGRES_USER=${DEFAULT_DB_USER}
       - POSTGRES_DB=${DEFAULT_DB_NAME}
     env_file:
-      - .env_docker
+      - .env

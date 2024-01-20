@@ -3,14 +3,14 @@ from typing import TYPE_CHECKING
 
 from fastapi.encoders import jsonable_encoder
 from sqlalchemy import DateTime, ForeignKey, Integer, String, event, func, insert, inspect
-from sqlalchemy.dialects.postgresql import JSON
+from sqlalchemy.dialects.postgresql import JSON, UUID
 from sqlalchemy.engine import Connection
 from sqlalchemy.ext.declarative import declared_attr
 from sqlalchemy.orm import Mapped, Mapper, class_mapper, mapped_column, relationship
 from sqlalchemy.orm.attributes import get_history
 
 from src.context import auth_user_ctx, orm_diff_ctx, request_id_ctx
-from src.db._types import GUID, int_pk
+from src.db._types import int_pk
 from src.db.base import Base
 
 if TYPE_CHECKING:
@@ -75,7 +75,7 @@ class AuditLogMixin:
             {
                 "__tablename__": f"{cls.__tablename__}_audit_log",
                 "parent_id": mapped_column(
-                    GUID,
+                    UUID,
                     ForeignKey(f"{cls.__tablename__}.id", ondelete="SET NULL"),
                     nullable=True,
                 ),
