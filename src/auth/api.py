@@ -8,11 +8,12 @@ from src import errors
 from src._types import IdResponse, ListT
 from src.auth import schemas
 from src.auth.models import Group, Permission, Role, User
-from src.auth.services import group_dto, role_dto, user_dto
+from src.auth.services import group_dto, menu_dto, role_dto, user_dto
 from src.cbv import cbv
 from src.deps import auth, get_session
 from src.exceptions import GenerError
 from src.security import generate_access_token_response
+from src.validators import list_to_tree
 
 router = APIRouter()
 
@@ -157,4 +158,31 @@ class RoleAPI:
     async def delete_role(self, id: int) -> IdResponse:
         db_role = await role_dto.get_one_or_404(self.session, id)
         await role_dto.delete(self.session, db_role)
+        return IdResponse(id=id)
+
+
+@cbv(router)
+class MenuAPI:
+    user: User = Depends(auth)
+    session: AsyncSession = Depends(get_session)
+
+    @router.post("/menus", operation_id="008bf4d4-cc01-48b0-82b8-1a67c0348b31")
+    async def create_menu(self, meun: schemas.MenuCreate) -> IdResponse:
+        new_menu = await menu_dto.create(self.session, meun)
+        return IdResponse(id=new_menu.id)
+
+    @router.get("/menus", operation_id="cb7f25ab-798b-4668-a838-6339425e2889")
+    async def get_menus(self) -> schemas.MenuTree:
+        results = await menu_dto.get_all(self.session)
+        return list_to_tree([r.dict() for r in results])
+
+    @router.put("menus/{id}", operation_id="b4d7ac97-a182-4bd1-a75c-6ae44b5fcf0a")
+    async def update_menu(self, id: int, meun: schemas.MenuUpdate) -> IdResponse:
+        db_menu = await menu_dto.get_one_or_404(self.session, id)
+        await menu_dto.update(self.session, db_menu, meun)
+        return IdResponse(id=id)
+
+    async def delete_menu(self, id: int) -> IdResponse:
+        db_menu = await menu_dto.get_one_or_404(self.session, id)
+        await menu_dto.delete(self.session, db_menu)
         return IdResponse(id=id)

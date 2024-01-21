@@ -86,6 +86,24 @@ class MenuCreate(MenuBase):
     id: int
 
 
+class MenuMeta(BaseModel):
+    title: str
+    icon: str
+    hidden: bool
+    keepAlive: bool
+    hiddenHeaderContent: bool
+    permission: list[int]
+    hideChildrenInMenu: bool
+
+
+class MenuTree(BaseModel):
+    id: int
+    name: str
+    redirect: str
+    meta: MenuMeta
+    children: list["MenuTree"]
+
+
 class MenuUpdate(BaseModel):
     name: str | None = None
     hidden: bool | None = None

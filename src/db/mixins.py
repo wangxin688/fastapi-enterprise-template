@@ -3,7 +3,7 @@ from typing import TYPE_CHECKING
 
 from fastapi.encoders import jsonable_encoder
 from sqlalchemy import DateTime, ForeignKey, Integer, String, event, func, insert, inspect
-from sqlalchemy.dialects.postgresql import JSON, UUID
+from sqlalchemy.dialects.postgresql import JSON
 from sqlalchemy.engine import Connection
 from sqlalchemy.ext.declarative import declared_attr
 from sqlalchemy.orm import Mapped, Mapper, class_mapper, mapped_column, relationship
@@ -75,7 +75,7 @@ class AuditLogMixin:
             {
                 "__tablename__": f"{cls.__tablename__}_audit_log",
                 "parent_id": mapped_column(
-                    UUID,
+                    Integer,
                     ForeignKey(f"{cls.__tablename__}.id", ondelete="SET NULL"),
                     nullable=True,
                 ),

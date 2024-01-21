@@ -96,8 +96,13 @@ class MenuDto(DtoBase[Menu, schemas.MenuCreate, schemas.MenuUpdate, schemas.Menu
     async def get_all(self, session: AsyncSession) -> Sequence[Menu]:
         return (await session.scalars(select(self.model))).all()
 
+    @staticmethod
+    def menu_tree_transform(menus: Sequence[Menu]) -> list[dict]:
+        ...
+
 
 user_dto = UserDto(User)
 group_dto = GroupDto(Group)
 role_dto = RoleDto(Role)
 permission_dto = PermissionDto(Permission)
+menu_dto = MenuDto(Menu)
