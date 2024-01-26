@@ -70,6 +70,15 @@ class AuidtUserQuery(BaseModel):
     updated_by_fk: list[int] = Field(Query(default=[]))
 
 
+class AuditLog(BaseModel):
+    id: int
+    created_at: datetime
+    request_id: str
+    action: str
+    diff: dict | None = None
+    user: AuditUserBase | None = None
+
+
 class QueryParams(BaseModel):
     limit: int | None = Query(default=20, ge=0, le=1000, description="Number of results to return per request.")
     offset: int | None = Query(default=0, ge=0, description="The initial index from which return the results.")
