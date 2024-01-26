@@ -57,7 +57,7 @@ class Group(Base, AuditTimeMixin):
     id: Mapped[_types.int_pk]
     name: Mapped[str]
     description: Mapped[str | None]
-    role_id: Mapped[int] = mapped_column(ForeignKey(Role.id, ondelete="CASCADE"))
+    role_id: Mapped[int] = mapped_column(ForeignKey(Role.id, ondelete="RESTRICT"))
     role: Mapped["Role"] = relationship(backref="group", passive_deletes=True)
     user: Mapped[list["User"]] = relationship(back_populates="group")
 
@@ -74,9 +74,9 @@ class User(Base, AuditTimeMixin):
     avatar: Mapped[str | None]
     last_login: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     is_active: Mapped[_types.bool_true]
-    group_id: Mapped[int] = mapped_column(ForeignKey(Group.id, ondelete="CASCADE"))
+    group_id: Mapped[int] = mapped_column(ForeignKey(Group.id, ondelete="RESTRICT"))
     group: Mapped["Group"] = relationship(back_populates="user", passive_deletes=True)
-    role_id: Mapped[int] = mapped_column(ForeignKey(Role.id, ondelete="CASCADE"))
+    role_id: Mapped[int] = mapped_column(ForeignKey(Role.id, ondelete="RESTRICT"))
     role: Mapped["Role"] = relationship(backref="user", passive_deletes=True)
     auth_info: Mapped[dict | None] = mapped_column(MutableDict.as_mutable(JSON))
 
