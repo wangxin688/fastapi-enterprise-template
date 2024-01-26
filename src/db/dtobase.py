@@ -145,6 +145,10 @@ class DtoBase(Generic[ModelT, CreateSchemaType, UpdateSchemaType, QuerySchemaTyp
                     where_clauses.append(cast(getattr(self.model, field), Text).ilike(search_text))
                 else:
                     where_clauses.append(cast(getattr(self.model, field), Text).like(search_text))
+            elif ignore_case:
+                where_clauses.append(getattr(self.model, field).ilike(search_text))
+            else:
+                where_clauses.append(getattr(self.model, field).like(search_text))
 
         return stmt.where(or_(False, *where_clauses))
 
