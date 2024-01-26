@@ -174,7 +174,8 @@ class MenuAPI:
     @router.get("/menus", operation_id="cb7f25ab-798b-4668-a838-6339425e2889")
     async def get_menus(self) -> schemas.MenuTree:
         results = await menu_dto.get_all(self.session)
-        return list_to_tree([r.dict() for r in results])
+        data = list_to_tree([r.dict() for r in results])
+        return schemas.MenuTree.model_validate(data)
 
     @router.put("menus/{id}", operation_id="b4d7ac97-a182-4bd1-a75c-6ae44b5fcf0a")
     async def update_menu(self, id: int, meun: schemas.MenuUpdate) -> IdResponse:
