@@ -3,7 +3,7 @@ from uuid import UUID
 
 from pydantic_extra_types.phone_numbers import PhoneNumber
 
-from src._types import AuditTimeBase, BaseModel, QueryParams
+from src._types import AuditTime, BaseModel, QueryParams
 
 
 class AccessToken(BaseModel):
@@ -43,7 +43,7 @@ class UserBase(BaseModel):
     avatar: str | None = None
 
 
-class UserBrief(UserBase):
+class UserBrief(UserBase, AuditTime):
     id: int
 
 
@@ -153,25 +153,25 @@ class RoleUpdate(RoleCreate):
     description: str | None = None
 
 
-class UserDetail(UserBase, AuditTimeBase):
+class UserDetail(UserBase, AuditTime):
     id: int
     role: RoleBrief
     group: GroupBrief
 
 
-class GroupDetail(GroupBase, AuditTimeBase):
+class GroupDetail(GroupBase, AuditTime):
     id: int
     user_count: int
     role: RoleBrief
 
 
-class RoleDetail(RoleBase, AuditTimeBase):
+class RoleDetail(RoleBase, AuditTime):
     id: int
     permission: list[Permission]
     user_count: int
 
 
-class RoleList(RoleBase, AuditTimeBase):
+class RoleList(RoleBase, AuditTime):
     id: int
     permission_count: int
 

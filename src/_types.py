@@ -26,9 +26,22 @@ class BaseModel(pydantic.BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
-class AuditTimeBase(BaseModel):
+class AuditTime(BaseModel):
     created_at: datetime
     updated_at: datetime | None = None
+
+
+class AuditUserBase(BaseModel):
+    id: int
+    name: str
+    email: str | None = None
+    phone: str | None = None
+    avatar: str | None = None
+
+
+class AuditUser(BaseModel):
+    created_by: AuditUserBase | None = None
+    updated_by: AuditUserBase | None = None
 
 
 class ListT(BaseModel, Generic[T]):
@@ -43,6 +56,18 @@ class AppStrEnum(str, Enum):
     @classmethod
     def to_list(cls) -> list[str]:
         return [c.value for c in cls]
+
+
+class AuditTimeQuery(BaseModel):
+    created_at__lte: datetime
+    created_at__gte: datetime
+    updated_at__lte: datetime
+    updated_at__gte: datetime
+
+
+class AuidtUserQuery(BaseModel):
+    created_by_fk: list[int] = Field(Query(default=[]))
+    updated_by_fk: list[int] = Field(Query(default=[]))
 
 
 class QueryParams(BaseModel):
