@@ -9,7 +9,7 @@ from sqlalchemy.ext.declarative import declared_attr
 from sqlalchemy.orm import Mapped, Mapper, class_mapper, mapped_column, relationship
 from sqlalchemy.orm.attributes import get_history
 
-from src.context import auth_user_ctx, orm_diff_ctx, request_id_ctx
+from src.context import orm_diff_ctx, request_id_ctx, user_ctx
 from src.db._types import int_pk
 from src.db.base import Base
 
@@ -54,8 +54,8 @@ class AuditLog:
     def user_id(cls) -> Mapped[int | None]:
         return mapped_column(
             Integer,
-            ForeignKey("auth_user.id", ondelete="SET NULL"),
-            default=auth_user_ctx.get,
+            ForeignKey("user.id", ondelete="SET NULL"),
+            default=user_ctx.get,
             nullable=True,
         )
 
@@ -93,7 +93,7 @@ class AuditLogMixin:
                 "action": "create",
                 "post_change": target.dict(exclude_relationship=True),
                 "parent_id": target.id,
-                "user_id": auth_user_ctx.get(),
+                "user_id": user_ctx.get(),
             },
         )
 
@@ -109,7 +109,7 @@ class AuditLogMixin:
                     "action": "update",
                     "diff": changes["diff"],
                     "parent_id": target.id,
-                    "user_id": auth_user_ctx.get(),
+                    "user_id": user_ctx.get(),
                 },
             )
 
@@ -122,7 +122,7 @@ class AuditLogMixin:
                 "action": "delete",
                 "diff": target.dict(exclude_relationship=True),
                 "parent_id": target.id,
-                "user_id": auth_user_ctx.get(),
+                "user_id": user_ctx.get(),
             },
         )
 
@@ -137,12 +137,12 @@ class AuditUserMixin:
     @declared_attr
     @classmethod
     def created_by_fk(cls) -> Mapped[int | None]:
-        return mapped_column(Integer, ForeignKey("auth_user.id"), default=auth_user_ctx.get, nullable=True)
+        return mapped_column(Integer, ForeignKey("user.id"), default=user_ctx.get, nullable=True)
 
     @declared_attr
     @classmethod
     def updated_by_fk(cls) -> Mapped[int | None]:
-        return mapped_column(Integer, ForeignKey("auth_user.id"), default=auth_user_ctx.get, nullable=True)
+        return mapped_column(Integer, ForeignKey("user.id"), default=user_ctx.get, nullable=True)
 
     @declared_attr
     @classmethod
