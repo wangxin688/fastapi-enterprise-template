@@ -9,8 +9,7 @@ from starlette.middleware.errors import ServerErrorMiddleware
 
 from src.config import settings
 from src.enums import Env
-from src.exception_handlers import default_exception_handler, exception_handlers
-from src.exceptions import sentry_ignore_errors
+from src.exceptions import default_exception_handler, exception_handlers, sentry_ignore_errors
 from src.middlewares import RequestMiddleware
 from src.openapi import openapi_description
 from src.routers import router
