@@ -99,10 +99,3 @@ class MenuDto(DtoBase[Menu, schemas.MenuCreate, schemas.MenuUpdate, schemas.Menu
     @staticmethod
     def menu_tree_transform(menus: Sequence[Menu]) -> list[dict]:
         ...
-
-
-user_dto = UserDto(User)
-group_dto = GroupDto(Group)
-role_dto = RoleDto(Role)
-permission_dto = PermissionDto(Permission)
-menu_dto = MenuDto(Menu)
