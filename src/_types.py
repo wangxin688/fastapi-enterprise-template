@@ -4,7 +4,7 @@ from typing import Annotated, Generic, Literal, ParamSpec, TypeAlias, TypedDict,
 
 import pydantic
 from fastapi import Query
-from pydantic import ConfigDict, Field, constr
+from pydantic import ConfigDict, Field, StringConstraints
 from pydantic.functional_validators import BeforeValidator
 
 from src.validators import items_to_list, mac_address_validator
@@ -18,8 +18,8 @@ Order: TypeAlias = Literal["descend", "ascend"]
 StrList = Annotated[str | list[str], BeforeValidator(items_to_list)]
 IntList = Annotated[int | list[int], BeforeValidator(items_to_list)]
 MacAddress = Annotated[str, BeforeValidator(mac_address_validator)]
-NameStr = constr(pattern="^[a-zA-Z0-9_-].$", max_length=50)
-NameChineseStr = constr(pattern="^[\u4e00-\u9fa5a-zA-Z0-9_-].$", max_length=50)
+NameStr = Annotated[str, StringConstraints(pattern="^[a-zA-Z0-9_-].$", max_length=50)]
+NameChineseStr = Annotated[str, StringConstraints(pattern="^[\u4e00-\u9fa5a-zA-Z0-9_-].$", max_length=50)]
 
 
 class BaseModel(pydantic.BaseModel):
@@ -44,9 +44,18 @@ class AuditUser(BaseModel):
     updated_by: AuditUserBase | None = None
 
 
+class AuditLog(BaseModel):
+    id: int
+    created_at: datetime
+    request_id: str
+    action: str
+    diff: dict | None = None
+    user: AuditUserBase | None = None
+
+
 class ListT(BaseModel, Generic[T]):
     count: int
-    results: T | None = None
+    results: list[T] | None = None
 
 
 class AppStrEnum(str, Enum):
@@ -68,15 +77,6 @@ class AuditTimeQuery(BaseModel):
 class AuidtUserQuery(BaseModel):
     created_by_fk: list[int] = Field(Query(default=[]))
     updated_by_fk: list[int] = Field(Query(default=[]))
-
-
-class AuditLog(BaseModel):
-    id: int
-    created_at: datetime
-    request_id: str
-    action: str
-    diff: dict | None = None
-    user: AuditUserBase | None = None
 
 
 class QueryParams(BaseModel):
@@ -108,3 +108,7 @@ class VisibleName(TypedDict, total=True):
 
 class IdResponse(BaseModel):
     id: int
+
+
+class IdCreate(IdResponse):
+    ...

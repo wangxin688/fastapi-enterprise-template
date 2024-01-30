@@ -7,7 +7,7 @@ from sqlalchemy import Row, Select, Text, cast, desc, func, inspect, not_, or_, 
 from sqlalchemy.dialects.postgresql import ARRAY, HSTORE, INET, JSON, JSONB, MACADDR
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.ext.mutable import Mutable
-from sqlalchemy.orm import InstrumentedAttribute, undefer
+from sqlalchemy.orm import InstrumentedAttribute, selectinload, undefer
 from sqlalchemy.sql.base import ExecutableOption
 
 from src._types import Order, QueryParams
@@ -18,6 +18,8 @@ from src.exceptions import ExistError, NotFoundError
 
 if TYPE_CHECKING:
     from sqlalchemy.engine.interfaces import ReflectedForeignKeyConstraint, ReflectedUniqueConstraint
+
+    from src.db.mixins import AuditLog
 
 ModelT = TypeVar("ModelT", bound=Base)
 PkIdT = TypeVar("PkIdT", int, UUID)
@@ -108,6 +110,17 @@ class DtoBase(Generic[ModelT, CreateSchemaType, UpdateSchemaType, QuerySchemaTyp
             The value of attribute on ``obj`` named as :attr:`id_attribute <AbstractAsyncRepository.id_attribute>`.
         """
         return getattr(obj, id_attribute if id_attribute is not None else cls.id_attribute)
+
+    def inspect_relationship(self) -> dict[str, type[Any]]:
+        result = {}
+        insp = inspect(self.model)
+        for relationship in insp.relationships:
+            key = relationship.key
+            direction_name = relationship.direction.name
+            if direction_name in ("MANYTOMANY", "ONETOMANY"):
+                _class = relationship.mapper.class_
+                result[key] = _class
+        return result
 
     def _get_base_stmt(self) -> Select[tuple[ModelT]]:
         """Get base select statement of query"""
@@ -574,9 +587,22 @@ class DtoBase(Generic[ModelT, CreateSchemaType, UpdateSchemaType, QuerySchemaTyp
         insp = await inspect_table(self.model.__tablename__)
         await self._apply_foreign_keys_check(session, obj_in, insp)
         await self._apply_unique_constraints_when_create(session, obj_in, insp)
+        m2m = self.inspect_relationship()
+        extra_excluded = set(m2m.keys())
+        if excludes:
+            excludes.update(extra_excluded)
+        else:
+            excludes = extra_excluded
         new_obj = self.model(
             **obj_in.model_dump(exclude_unset=exclude_unset, exclude_none=exclude_none, exclude=excludes)
         )
+        if m2m:
+            for key, value in m2m.items():
+                if hasattr(obj_in, key) and getattr(obj_in, key) is not None:
+                    dto_m2m = DtoBase(value)
+                    db_m2m = await dto_m2m.get_multi_by_pks_or_404(session, [r.id for r in getattr(obj_in, key)])
+                    setattr(new_obj, key, db_m2m)
+                setattr(obj_in, key, value)
         if commit:
             return await self.commit(session, new_obj)
         return new_obj
@@ -605,6 +631,18 @@ class DtoBase(Generic[ModelT, CreateSchemaType, UpdateSchemaType, QuerySchemaTyp
         insp = await inspect_table(self.model.__tablename__)
         await self._apply_foreign_keys_check(session, obj_in, insp)
         await self._apply_unique_constraints_when_update(session, obj_in, insp, db_obj)
+        m2m = self.inspect_relationship()
+        extra_excluded = set(m2m.keys())
+        if excludes:
+            excludes.update(extra_excluded)
+        else:
+            excludes = extra_excluded
+        if m2m:
+            for key, value in m2m.items():
+                if hasattr(obj_in, key) and getattr(obj_in, key) is not None:
+                    await self.update_relationship_field(
+                        session, db_obj, value, key, [r.id for r in getattr(obj_in, key)], self.id_attribute
+                    )
         db_obj = self._update_mutable_tracking(obj_in, db_obj, excludes)
         if commit:
             return await self.commit(session, db_obj)
@@ -843,3 +881,16 @@ class DtoBase(Generic[ModelT, CreateSchemaType, UpdateSchemaType, QuerySchemaTyp
         """
         await session.delete(db_obj)
         await session.commit()
+
+    async def get_audit_log(self, session: AsyncSession, pk_id: PkIdT) -> tuple[int, Sequence["AuditLog"] | None]:
+        if hasattr(self.model, "audit_log"):
+            stmt = self._get_base_stmt()
+            id_str = self.get_id_attribute_value(self.model)
+            stmt = stmt.where(id_str == pk_id).options(
+                selectinload(self.model.audit_log)  # type: ignore  # noqa: PGH003
+            )
+            results = (await session.scalars(stmt)).one_or_none()
+            if results:
+                return len(results.audit_log), results.audit_log  # type: ignore  # noqa: PGH003
+            return 0, None
+        return 0, None

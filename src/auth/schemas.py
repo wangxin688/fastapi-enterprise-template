@@ -1,9 +1,8 @@
 from datetime import datetime
-from uuid import UUID
 
 from pydantic_extra_types.phone_numbers import PhoneNumber
 
-from src._types import AuditTime, BaseModel, QueryParams
+from src._types import AuditTime, BaseModel, IdCreate, QueryParams
 
 
 class AccessToken(BaseModel):
@@ -43,7 +42,7 @@ class UserBase(BaseModel):
     avatar: str | None = None
 
 
-class UserBrief(UserBase, AuditTime):
+class UserBrief(UserBase):
     id: int
 
 
@@ -130,11 +129,11 @@ class UserCreate(UserBase):
 class GroupCreate(GroupBase):
     password: str
     role_id: int
-    user_ids: list[int] | None = None
+    user: list[IdCreate]
 
 
 class RoleCreate(RoleBase):
-    permission_ids: list[UUID] | None = None
+    permission: list[IdCreate]
 
 
 class UserUpdate(UserCreate):
