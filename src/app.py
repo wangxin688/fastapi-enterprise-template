@@ -7,9 +7,8 @@ from fastapi import FastAPI
 from starlette.middleware.cors import CORSMiddleware
 from starlette.middleware.errors import ServerErrorMiddleware
 
-from src.core.config import settings
-from src.core.error.auth_exceptions import default_exception_handler, exception_handlers, sentry_ignore_errors
-from src.enums import Env
+from src.core.config import _Env, settings
+from src.core.errors.auth_exceptions import default_exception_handler, exception_handlers, sentry_ignore_errors
 from src.libs.redis import cache
 from src.openapi import openapi_description
 from src.register.middlewares import RequestMiddleware
@@ -26,7 +25,7 @@ def create_app() -> FastAPI:
         yield
         await pool.disconnect()
 
-    if settings.ENV == Env.PROD.name:  # noqa: SIM300
+    if _Env.PROD.name == settings.ENV:
         sentry_sdk.init(
             dsn=settings.WEB_SENTRY_DSN,
             sample_rate=settings.SENTRY_SAMPLE_RATE,

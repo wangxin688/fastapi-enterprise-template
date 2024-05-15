@@ -26,9 +26,9 @@ class IntegerEnum(TypeDecorator[T]):
         raise ValueError(msg)
 
     @no_type_check
-    def process_result_value(self, value: int, dialect: "Dialect")-> "T":  # noqa: ARG002
+    def process_result_value(self, value: int, dialect: "Dialect") -> "T":  # noqa: ARG002
         return self.enum_type(value)
 
     @no_type_check
-    def copy(self, **kwargs: Any)-> "IntegerEnum[T]":  # noqa: ARG002
+    def copy(self, **kwargs: Any) -> "IntegerEnum[T]":  # noqa: ARG002
         return IntegerEnum(self.enum_type)

@@ -1,4 +1,6 @@
-from fastapi import APIRouter, Depends, status
+from uuid import UUID
+
+from fastapi import APIRouter, Depends, Request, status
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -10,8 +12,8 @@ from src.core.utils.cbv import cbv
 from src.core.utils.validators import list_to_tree
 from src.deps import auth, get_session
 from src.features.auth import schemas
-from src.features.auth.models import Group, Menu, Role, User
-from src.features.auth.repositories import GroupRepo, MenuRepo, RoleRepo, UserRepo
+from src.features.auth.models import Group, Menu, Permission, Role, User
+from src.features.auth.repository import GroupRepo, MenuRepo, PermissionRepo, RoleRepo, UserRepo
 from src.features.auth.security import generate_access_token_response
 
 router = APIRouter()
@@ -174,3 +176,38 @@ class MenuAPI:
         db_menu = await self.dto.get_one_or_404(self.session, id)
         await self.dto.delete(self.session, db_menu)
         return IdResponse(id=id)
+
+
+@cbv(router)
+class PermissionCBV:
+    user: User = Depends(auth)
+    session: AsyncSession = Depends(get_session)
+    dto = PermissionRepo(Permission)
+
+    @router.get("/permissions", operation_id="8057d614-150f-42ee-984c-d0af35796da3")
+    async def get_permissions(self) -> ListT[schemas.Permission]:
+        permissions = await self.dto.get_all(self.session)
+        return ListT(results=[schemas.Permission.model_validate(p) for p in permissions], count=len(permissions))
+
+    @router.post("/permissions", operation_id="e0fe80d5-cbe0-4c2c-9eff-57e80ecba522")
+    async def sync_db_permission(self, request: Request) -> dict[str, set[str]]:
+        routes = request.app.routes
+        operation_ids = [route.operation_id for route in routes]
+        router_mappings = {
+            router.operation_id: {
+                "name": router.name,
+                "path": router.path,
+                "methods": router.methods,
+                "description": router.description,
+            }
+            for router in routes
+        }
+        permissions = await self.dto.get_multi_by_ids(self.session, operation_ids)
+        removed = {str(p.id) for p in permissions} - set(operation_ids)
+        added = set(operation_ids) - {str(p.id) for p in permissions}
+        if removed:
+            await self.dto.get_multi_and_delete(self.session, [UUID(p_id) for p_id in removed])
+        if added:
+            new_permissions = [Permission(id=p_id, **router_mappings[p_id]) for p_id in added]
+            await self.dto.batch_commit(self.session, new_permissions)
+        return {"added": added, "removed": removed}

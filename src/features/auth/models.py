@@ -2,8 +2,7 @@ from datetime import datetime
 from typing import ClassVar
 from uuid import UUID
 
-from sqlalchemy import DateTime, ForeignKey, Integer, and_, func, select
-from sqlalchemy.dialects.postgresql import ARRAY, JSON
+from sqlalchemy import JSON, DateTime, ForeignKey, Integer, and_, func, select
 from sqlalchemy.ext.mutable import MutableDict
 from sqlalchemy.orm import Mapped, backref, column_property, mapped_column, relationship
 from sqlalchemy.orm.collections import attribute_mapped_collection
@@ -78,7 +77,7 @@ class User(Base, AuditTimeMixin):
     group: Mapped["Group"] = relationship(back_populates="user", passive_deletes=True)
     role_id: Mapped[int] = mapped_column(ForeignKey(Role.id, ondelete="RESTRICT"))
     role: Mapped["Role"] = relationship(backref="user", passive_deletes=True)
-    auth_info: Mapped[dict | None] = mapped_column(MutableDict.as_mutable(JSON))
+    auth_info: Mapped[dict | None] = mapped_column(MutableDict.as_mutable(JSON()))
 
 
 class Menu(Base):
@@ -88,13 +87,13 @@ class Menu(Base):
     name: Mapped[str] = mapped_column(unique=True, comment="the unique name of route")
     hidden: Mapped[types.bool_false]
     redirect: Mapped[str] = mapped_column(comment="redirect url for the route")
-    hideChildrenInMenu: Mapped[types.bool_false] = mapped_column(comment="hide children in menu force or not")  # noqa: N815
+    hide_children_in_menu: Mapped[types.bool_false] = mapped_column(comment="hide children in menu force or not")
     order: Mapped[int]
     title: Mapped[str] = mapped_column(comment="the title of the route, 面包屑")
     icon: Mapped[str | None]
-    keepAlive: Mapped[types.bool_false] = mapped_column(comment="cache route, 开启multi-tab时为true")  # noqa: N815
-    hiddenHeaderContent: Mapped[types.bool_false] = mapped_column(comment="隐藏pageheader页面带的面包屑和标题栏")  # noqa: N815
-    permission: Mapped[list[int] | None] = mapped_column(ARRAY(Integer, dimensions=1))
+    keep_alive: Mapped[types.bool_false] = mapped_column(comment="cache route, 开启multi-tab时为true")
+    hidden_header_content: Mapped[types.bool_false] = mapped_column(comment="隐藏pageheader页面带的面包屑和标题栏")
+    permission: Mapped[list[int] | None] = mapped_column(JSON(), nullable=True)
     parent_id: Mapped[int | None] = mapped_column(ForeignKey(id, ondelete="CASCADE"))
     children: Mapped[list["Menu"]] = relationship(
         cascade="all, delete-orphan",

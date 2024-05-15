@@ -53,7 +53,7 @@ packages = ["src"]
 [tool.ruff]
 line-length = 120
 indent-width = 4
-target-version = "py311"
+target-version = "py312"
 
 [tool.ruff.lint]
 select = ["ALL"]
@@ -64,9 +64,9 @@ fixable = ["ALL"]
 [tool.ruff.extend-per-file-ignores]
 "env.py" = ["INP001", "I001", "ERA001"]
 "tests/*.py" = ["S101"]
-"exceptions.py" = ["ARG001"]
+"*exceptions.py" = ["ARG001"]
 "models.py" = ["RUF012"]
-"api.py" = ["A002", "B008"]
+"restapi.py" = ["A002", "B008"]
 "deps.py" = ["B008"]
 "src/internal/api.py" = ["ARG001"]
 "src/auth/schemas.py" = ["N815"] # frontend menu
@@ -86,14 +86,12 @@ extend-immutable-calls=[
 [tool.black]
 line-length = 120
 preview = true
-target_version = ['py311']
 
 [tool.pytest.ini_options]
 addopts = "--cov-report term --cov-config=.coveragerc -W ignore:DeprecationWarning --cov=src -v"
 xfail_strict = true
 asyncio_mode = "auto"
 markers = ["pytest.mark.anyio"]
-miniversion = "6.0"
 testpaths = ["tests"]
 
 [tool.coverage.report]
@@ -114,3 +112,28 @@ exclude_lines = [
 
 [tool.coverage.run]
 concurrency=["thread", "greenlet"]
+
+[tool.mypy]
+exclude = "^tools/.*"
+plugins = ["pydantic.mypy"]
+
+warn_unused_ignores = true
+warn_redundant_casts = true
+warn_unused_configs = true
+warn_unreachable = true
+warn_return_any = true
+strict = true
+disallow_untyped_decorators = true
+disallow_any_generics = false
+implicit_reexport = false
+show_error_codes = true
+
+
+[tool.pydantic-mypy]
+init_forbid_extra = true
+init_typed = true
+warn_required_dynamic_aliases = true
+warn_untyped_fields = true
+
+[tool.pyright]
+include = ["src", "tests", "examples"]

@@ -1,11 +1,8 @@
+from sqlalchemy import ForeignKey, create_engine
+from sqlalchemy.orm import Mapped, Session, mapped_column, relationship
+
 from src.core.models.base import Base
 
-from sqlalchemy.orm import Mapped, mapped_column, relationship
-from sqlalchemy import create_engine, ForeignKey
-from sqlalchemy.orm import Session
-from sqlalchemy.exc import IntegrityError
-
-from sqlalchemy import event
 
 class TestModel(Base):
     __tablename__ = "test"
@@ -15,11 +12,13 @@ class TestModel(Base):
     t_id: Mapped[int] = mapped_column(ForeignKey("test1.id", ondelete="CASCADE"))
     test1: Mapped["Test1Model"] = relationship(back_populates="test")
 
+
 class Test1Model(Base):
     __tablename__ = "test1"
     id: Mapped[int] = mapped_column(primary_key=True)
     name: Mapped[str] = mapped_column(unique=True)
     test: Mapped[list[TestModel]] = relationship(back_populates="test1")
+
 
 engine = create_engine("sqlite://", echo=True)
 
@@ -31,4 +30,3 @@ with Session(engine) as session:
     session.commit()
     print(t.__dict__)
     print(t.test1)
-

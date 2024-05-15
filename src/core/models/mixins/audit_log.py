@@ -18,7 +18,6 @@ if TYPE_CHECKING:
     from src.features.auth.models import User
 
 
-
 def get_object_change(obj: Mapper) -> dict:
     insp = inspect(obj)
     changes: dict[str, dict] = {
@@ -129,5 +128,3 @@ class AuditLogMixin:
         event.listen(cls, "after_insert", cls.log_create, propagate=True)
         event.listen(cls, "after_update", cls.log_update, propagate=True)
         event.listen(cls, "after_delete", cls.log_delete, propagate=True)
-
-

@@ -155,7 +155,10 @@ def default_exception_handler(request: Request, exc: Exception) -> JSONResponse:
     log_exception(exc, logger_trace_info=True)
     return JSONResponse(
         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-        content={"error": base_exceptions.ERR_500.error, "message": _(base_exceptions.ERR_500.message, request_id=request_id_ctx.get())},
+        content={
+            "error": base_exceptions.ERR_500.error,
+            "message": _(base_exceptions.ERR_500.message, request_id=request_id_ctx.get()),
+        },
     )
 
 

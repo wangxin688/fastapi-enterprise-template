@@ -13,7 +13,6 @@ from starlette.responses import Response, StreamingResponse
 from starlette.types import ASGIApp
 
 from src.core.utils.context import locale_ctx, request_id_ctx
-from src.core.utils.i18n import ACCEPTED_LANGUAGES
 
 
 @dataclass
@@ -33,8 +32,6 @@ class RequestMiddleware(BaseHTTPMiddleware):
         request_id = str(uuid.uuid4())
         request_id_ctx.set(request_id)
         language = request.headers.get(locale_ctx.name, locale_ctx.get())
-        if language not in ACCEPTED_LANGUAGES:
-            language = "en_US"
         locale_ctx.set(language)
         content_type = request.headers.get(self.content_type, None)
         if all((content_type, content_type == self.csv_mime, request.method == "GET")):

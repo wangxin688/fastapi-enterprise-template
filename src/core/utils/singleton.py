@@ -4,6 +4,7 @@ from typing import ParamSpec, TypeVar
 T = TypeVar("T")
 P = ParamSpec("P")
 
+
 def singleton(cls: type[T]) -> Callable[..., T]:
     """
     Singleton decorator for any class implements.
@@ -22,4 +23,3 @@ def singleton(cls: type[T]) -> Callable[..., T]:
         return _instance[cls]
 
     return _singleton
-

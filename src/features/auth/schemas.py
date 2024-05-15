@@ -1,5 +1,6 @@
 from datetime import datetime
 
+from pydantic import Field
 from pydantic_extra_types.phone_numbers import PhoneNumber
 
 from src.core._types import AuditTime, BaseModel, IdCreate, QueryParams
@@ -71,12 +72,12 @@ class MenuBase(BaseModel):
     name: str
     hidden: bool
     redirect: str
-    hideChildrenInMenu: bool
+    hide_children_in_menu: bool = Field(..., alias="hideChildrenInMenu")
     order: int
     title: str
     icon: str | None = None
-    keepAlive: bool
-    hiddenHeaderContent: bool
+    keep_alive: bool = Field(..., alias="keepAlive")
+    hidden_header_content: bool = Field(..., alias="hiddenHeaderContent")
     permission: list[int]
     parent_id: int
 
@@ -89,10 +90,10 @@ class MenuMeta(BaseModel):
     title: str
     icon: str
     hidden: bool
-    keepAlive: bool
-    hiddenHeaderContent: bool
+    keep_alive: bool = Field(..., alias="keepAlive")
+    hidden_header_content: bool = Field(..., alias="hiddenHeaderContent")
     permission: list[int]
-    hideChildrenInMenu: bool
+    hide_children_in_menu: bool = Field(..., alias="hideChildrenInMenu")
 
 
 class MenuTree(BaseModel):
@@ -107,12 +108,12 @@ class MenuUpdate(BaseModel):
     name: str | None = None
     hidden: bool | None = None
     redirect: str | None = None
-    hideChildrenInMenu: bool | None = None
+    hide_children_in_menu: bool | None = Field(default=None, alias="hideChildrenInMenu")
     order: int | None = None
     title: str | None = None
     icon: str | None = None
-    keepAlive: bool | None = None
-    hiddenHeaderContent: bool | None = None
+    keep_alive: bool | None = Field(default=None, alias="keepAlive")
+    hidden_header_content: bool | None = Field(default=None, alias="hiddenHeaderContent")
     permission: list[int] | None = None
     parent_id: int | None = None
 

@@ -11,7 +11,7 @@ from sqlalchemy.orm import selectinload
 
 from src.core.config import settings
 from src.core.database.session import async_session
-from src.core.error import auth_exceptions
+from src.core.errors import auth_exceptions
 from src.core.utils.context import locale_ctx
 from src.features.auth.consts import ReservedRoleSlug
 from src.features.auth.models import RolePermission, User

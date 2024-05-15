@@ -34,8 +34,9 @@ class Settings(BaseSettings):
     SENTRY_SAMPLE_RATE: float = Field(default=1.0, gt=0.0, le=1.0)
     SENTRY_TRACES_SAMPLE_RATE: float | None = Field(default=None, gt=0.0, le=1.0)
 
-    SQLALCHEMY_DATABASE_URI: str = Field(default=
-                                         "postgresql+asyncpg://demo:91fb8e9e009f5b9ce1854d947e6fe4a3@localhost:5432/demo")
+    SQLALCHEMY_DATABASE_URI: str = Field(
+        default="postgresql+asyncpg://demo:91fb8e9e009f5b9ce1854d947e6fe4a3@localhost:5432/demo"
+    )
     DATABASE_POOL_SIZE: int | None = Field(default=50)
     DATABASE_POOL_MAX_OVERFLOW: int | None = Field(default=10)
     REDIS_DSN: str = Field(default="redis://:cfe1c2c4703abb205d71abdc07cc3f3d@localhost:6379")
@@ -43,5 +44,6 @@ class Settings(BaseSettings):
     ENV: str = _Env.DEV.name
 
     model_config = SettingsConfigDict(env_file=f"{PROJECT_DIR}/.env", case_sensitive=True, extra="allow")
+
 
 settings = Settings()

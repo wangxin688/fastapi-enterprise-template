@@ -2,22 +2,24 @@ from collections import defaultdict
 from collections.abc import Callable
 from functools import reduce
 from operator import getitem
-from typing import Any, Literal, TypeAlias
+from typing import Any, ClassVar
 
 from src.core.utils.context import locale_ctx
 from src.core.utils.singleton import singleton
 from src.openapi import translations
 
-ACCEPTED_LANGUAGES: TypeAlias = Literal["en_US", "zh_CN"]
-
 
 @singleton
 class I18n:
+    accepted_languages: ClassVar[set[str]] = {"en_US", "zh_CN"}
+
     def __init__(self) -> None:
         self.translations = translations
 
     def gettext(self, path: str, **kwargs: Any) -> dict | str:
         locale = locale_ctx.get()
+        if not locale or locale not in self.accepted_languages:
+            locale = "en_US"
         founded: dict | str = self._find(locale, path)
 
         if len(kwargs) > 0 and isinstance(founded, str):
@@ -27,7 +29,7 @@ class I18n:
                 return founded
         return founded
 
-    def _find(self, language: ACCEPTED_LANGUAGES, path: str) -> dict | str:
+    def _find(self, language: str, path: str) -> dict | str:
         try:
             return reduce(getitem, path.split("."), self.translations[language])
         except (KeyError, TypeError):

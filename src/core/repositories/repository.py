@@ -3,7 +3,7 @@ from typing import TYPE_CHECKING, Any, Generic, TypedDict, TypeVar, overload
 from uuid import UUID
 
 from pydantic import BaseModel
-from sqlalchemy import Row, Select, Text, cast, desc, func, inspect, not_, or_, select, text
+from sqlalchemy import Row, Select, Text, cast, desc, func, inspect, not_, or_, select, text, types
 from sqlalchemy.dialects.postgresql import ARRAY, HSTORE, INET, JSON, JSONB, MACADDR
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.ext.mutable import Mutable
@@ -29,6 +29,7 @@ UpdateSchemaType = TypeVar("UpdateSchemaType", bound=BaseModel)
 QuerySchemaType = TypeVar("QuerySchemaType", bound=QueryParams)
 
 TABLE_PARAMS: dict[str, "InspectorTableConstraint"] = {}
+
 
 class InspectorTableConstraint(TypedDict, total=False):
     foreign_keys: dict[str, tuple[str, str]]
@@ -64,10 +65,10 @@ async def inspect_table(table_name: str) -> InspectorTableConstraint:
         return result
 
 
-class  BaseRepository(Generic[ModelT, CreateSchemaType, UpdateSchemaType, QuerySchemaType]):
+class BaseRepository(Generic[ModelT, CreateSchemaType, UpdateSchemaType, QuerySchemaType]):
     id_attribute: str = "id"
     check_nullable: bool = True
-    check_unique_constriants: bool = True
+    check_unique_constraints: bool = True
 
     def __init__(self, model: type[ModelT]) -> None:
         """
@@ -146,10 +147,10 @@ class  BaseRepository(Generic[ModelT, CreateSchemaType, UpdateSchemaType, QueryS
         """
         where_clauses = []
         search_text = f"%{value}%"
-
+        casting_types = (HSTORE, JSON, JSONB, INET, MACADDR, ARRAY, types.JSON, types.ARRAY)
         for field in self.model.__search_fields__:
             _t = getattr(self.model, field).type
-            if type(_t) in (HSTORE, JSON, JSONB, INET, MACADDR, ARRAY):
+            if type(_t) in casting_types:
                 if ignore_case:
                     where_clauses.append(cast(getattr(self.model, field), Text).ilike(search_text))
                 else:
@@ -264,7 +265,7 @@ class  BaseRepository(Generic[ModelT, CreateSchemaType, UpdateSchemaType, QueryS
                 stmt = stmt.where(getattr(self.model, key).is_(value))
             elif isinstance(value, list):
                 if value:
-                    if key in self.model.__i18n_fields__ and type(getattr(self.model, key).type) is HSTORE:
+                    if key in self.model.__i18n_fields__ and type(getattr(self.model, key).type) is types.JSON:
                         stmt = stmt.where(
                             or_(
                                 getattr(self.model, key)["zh_CN"].in_(value),
@@ -569,11 +570,11 @@ class  BaseRepository(Generic[ModelT, CreateSchemaType, UpdateSchemaType, QueryS
         Raises:
             None
         """
-        if any((self.check_nullable, self.check_unique_constriants)):
+        if any((self.check_nullable, self.check_unique_constraints)):
             insp = await inspect_table(self.model.__tablename__)
             if self.check_nullable:
                 await self._apply_foreign_keys_check(session, obj_in, insp)
-            if self.check_unique_constriants:
+            if self.check_unique_constraints:
                 await self._apply_unique_constraints_when_create(session, obj_in, insp)
         m2m = self.inspect_relationship()
         extra_excluded = set(m2m.keys())
@@ -616,11 +617,11 @@ class  BaseRepository(Generic[ModelT, CreateSchemaType, UpdateSchemaType, QueryS
         Returns:
             ModelT: The updated database object.
         """
-        if any((self.check_nullable, self.check_unique_constriants)):
+        if any((self.check_nullable, self.check_unique_constraints)):
             insp = await inspect_table(self.model.__tablename__)
             if self.check_nullable:
                 await self._apply_foreign_keys_check(session, obj_in, insp)
-            if self.check_unique_constriants:
+            if self.check_unique_constraints:
                 await self._apply_unique_constraints_when_update(session, obj_in, insp, db_obj)
         m2m = self.inspect_relationship()
         extra_excluded = set(m2m.keys())
@@ -711,7 +712,8 @@ class  BaseRepository(Generic[ModelT, CreateSchemaType, UpdateSchemaType, QueryS
         return (await session.scalars(self._get_base_stmt())).all()
 
     async def get_one_by_id(
-        self, session: AsyncSession, pk_id: PkIdT, *options: ExecutableOption, undefer_load: bool = False)-> ModelT | None:
+        self, session: AsyncSession, pk_id: PkIdT, *options: ExecutableOption, undefer_load: bool = False
+    ) -> ModelT | None:
         """
         Retrieves a single instance of ModelT from the database based on the provided \n
         primary key (pk_id) and optional query options (options).
@@ -827,7 +829,6 @@ class  BaseRepository(Generic[ModelT, CreateSchemaType, UpdateSchemaType, QueryS
             stmt = self._apply_selectinload(stmt, *options, undefer_load=undefer_load)
         return (await session.scalars(stmt)).all()
 
-
     async def get_multi_by_pks_or_404(
         self, session: AsyncSession, pk_ids: list[PkIdT], *options: ExecutableOption, undefer_load: bool = False
     ) -> Sequence[ModelT]:
@@ -892,21 +893,44 @@ class  BaseRepository(Generic[ModelT, CreateSchemaType, UpdateSchemaType, QueryS
             await session.delete(r)
         await session.commit()
 
-    async def commit(self, session: AsyncSession, obj: ModelT) -> ModelT:
+    async def commit(self, session: AsyncSession, obj: ModelT, refresh: bool = False) -> ModelT:
         """
         Commits the changes made in the session and refreshes the given object.
 
         Args:
             session (AsyncSession): The session used to commit the changes.
             obj (ModelT): The object to be refreshed after the commit.
+            refresh (bool, optional): Whether to refresh the object. Defaults to False.
 
         Returns:
             ModelT: The creating/updating object.
         """
         """"""
+        session.add(obj)
         await session.commit()
-        await session.refresh(obj)
+        if refresh:
+            await session.refresh(obj)
         return obj
+
+    async def batch_commit(self, session: AsyncSession, objs: list[ModelT], refresh: bool = False) -> list[ModelT]:
+        """
+        Commits the changes made in the session and refreshes the given objects.
+
+        Args:
+            session (AsyncSession): The session used to commit the changes.
+            objs (Sequence[ModelT]): The objects to be refreshed after the commit.
+            refresh (bool, optional): Whether to refresh the object. Defaults to False.
+
+        Returns:
+            None
+        """
+        """"""
+        session.add_all(objs)
+        await session.commit()
+        if refresh:
+            for obj in objs:
+                await session.refresh(obj)
+        return objs
 
     async def delete(self, session: AsyncSession, db_obj: ModelT) -> None:
         """

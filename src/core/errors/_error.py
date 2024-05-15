@@ -12,9 +12,5 @@ class ErrorCode(NamedTuple):
     message: str
     details: list[Any] | None = None
 
-    def dict(self)-> "Error":
-        return {
-            "code": self.error,
-            "message": self.message,
-            "details": self.details
-        }
+    def dict(self) -> "Error":
+        return {"code": self.error, "message": self.message, "details": self.details}

@@ -8,7 +8,7 @@ from enum import IntEnum
 from functools import partial, update_wrapper, wraps
 from hashlib import md5
 from inspect import Parameter, Signature, signature
-from typing import Any, NewType, TypeAlias, get_type_hints
+from typing import Any, NewType, get_type_hints
 from uuid import UUID
 
 import redis.asyncio as redis
@@ -27,7 +27,7 @@ DEFAULT_CACHE_HEADER = "X-Cache"
 logger = logging.getLogger(__name__)
 
 _T = NewType("_T", BaseModel)
-ArgType: TypeAlias = type[object]
+type ArgType = type[object]
 SigParameters = Mapping[str, Parameter]
 ALWAYS_IGNORE_ARG_TYPES = [Response, Request, Client, AsyncClient, Session, AsyncSession, Redis, User]
 

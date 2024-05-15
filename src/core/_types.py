@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Annotated, Generic, Literal, ParamSpec, TypeAlias, TypedDict, TypeVar
+from typing import Annotated, Generic, Literal, ParamSpec, TypedDict, TypeVar
 
 import pydantic
 from fastapi import Query
@@ -12,7 +12,7 @@ T = TypeVar("T")
 P = ParamSpec("P")
 R = TypeVar("R")
 
-Order: TypeAlias = Literal["descend", "ascend"]
+type Order = Literal["descend", "ascend"]
 
 StrList = Annotated[str | list[str], BeforeValidator(items_to_list)]
 IntList = Annotated[int | list[int], BeforeValidator(items_to_list)]
@@ -55,7 +55,6 @@ class AuditLog(BaseModel):
 class ListT(BaseModel, Generic[T]):
     count: int
     results: list[T] | None = None
-
 
 
 class AuditTimeQuery(BaseModel):

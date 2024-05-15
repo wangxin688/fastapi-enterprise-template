@@ -22,4 +22,3 @@ Please notice that this project is still working in progress.
 2. Enhance DTO base for better crud support.
 3. Release beta version.
 4. enhance docs.
-

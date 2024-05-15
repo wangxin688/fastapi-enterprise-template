@@ -23,8 +23,9 @@ class UserRepo(BaseRepository[User, schemas.UserCreate, schemas.UserUpdate, sche
         return db_user
 
 
-
-class PermissionRepo(BaseRepository[Permission, schemas.PermissionCreate, schemas.PermissionUpdate, schemas.PermissionQuery]):
+class PermissionRepo(
+    BaseRepository[Permission, schemas.PermissionCreate, schemas.PermissionUpdate, schemas.PermissionQuery]
+):
     async def create(
         self,
         session: AsyncSession,
@@ -61,6 +62,7 @@ class MenuRepo(BaseRepository[Menu, schemas.MenuCreate, schemas.MenuUpdate, sche
 
 class GroupRepo(BaseRepository[Group, schemas.GroupCreate, schemas.GroupUpdate, schemas.GroupQuery]):
     ...
+
 
 class RoleRepo(BaseRepository[Role, schemas.RoleCreate, schemas.RoleUpdate, schemas.RoleQuery]):
     ...
