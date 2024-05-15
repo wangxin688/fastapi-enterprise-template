@@ -4,8 +4,8 @@ from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.auth.models import Group, Role, User
-from src.db.session import async_session
-from src.enums import ReservedRoleSlug
+from src.core.database.session import async_session
+from src.features.auth.consts import ReservedRoleSlug
 
 
 async def create_pg_extensions(session: AsyncSession) -> None:

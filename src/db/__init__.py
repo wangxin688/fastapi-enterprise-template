@@ -1,5 +1,5 @@
 from src.auth.models import *
-from src.db.base import Base
+from src.core.models.base import Base
 
 
 def orm_by_table_name(table_name: str) -> type[Base] | None:

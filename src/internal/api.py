@@ -1,9 +1,9 @@
 from fastapi import APIRouter, Request
 from sqlalchemy import delete, select
 
-from src._types import ResultT
 from src.auth import schemas
 from src.auth.models import Permission
+from src.core._types import ResultT
 from src.deps import AuthUser, SqlaSession
 
 router = APIRouter()

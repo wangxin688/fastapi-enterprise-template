@@ -9,14 +9,14 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from src import exceptions
-from src.auth.models import RolePermission, User
-from src.config import settings
-from src.context import locale_ctx
-from src.db.session import async_session
-from src.enums import ReservedRoleSlug
-from src.security import API_WHITE_LISTS, JWT_ALGORITHM, JwtTokenPayload
-from src.utils.cache import CacheNamespace, redis_client
+from src.core.config import settings
+from src.core.database.session import async_session
+from src.core.error import auth_exceptions
+from src.core.utils.context import locale_ctx
+from src.features.auth.consts import ReservedRoleSlug
+from src.features.auth.models import RolePermission, User
+from src.features.auth.security import API_WHITE_LISTS, JWT_ALGORITHM, JwtTokenPayload
+from src.libs.redis.cache import CacheNamespace, redis_client
 
 token = HTTPBearer()
 
@@ -30,16 +30,16 @@ async def auth(request: Request, session: AsyncSession = Depends(get_session), t
     try:
         payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[JWT_ALGORITHM])
     except jwt.DecodeError as e:
-        raise exceptions.TokenInvalidError from e
+        raise auth_exceptions.TokenInvalidError from e
     token_data = JwtTokenPayload(**payload)
     if token_data.refresh:
-        raise exceptions.TokenInvalidError
+        raise auth_exceptions.TokenInvalidError
     now = datetime.now(tz=UTC)
     if now < token_data.issued_at or now > token_data.expires_at:
-        raise exceptions.TokenExpireError
+        raise auth_exceptions.TokenExpireError
     user = await session.get(User, token_data.sub, options=[selectinload(User.role)])
     if not user:
-        raise exceptions.NotFoundError(User.__visible_name__[locale_ctx.get()], "id", id)
+        raise auth_exceptions.NotFoundError(User.__visible_name__[locale_ctx.get()], "id", id)
     check_user_active(user.is_active)
     operation_id = request.scope.get("operation_id")
     if not operation_id:
@@ -53,7 +53,7 @@ async def auth(request: Request, session: AsyncSession = Depends(get_session), t
 
 def check_user_active(is_active: bool) -> None:
     if not is_active:
-        raise exceptions.PermissionDenyError
+        raise auth_exceptions.PermissionDenyError
 
 
 def check_privileged_role(slug: str, operation_id: str) -> bool:
@@ -71,11 +71,11 @@ async def check_role_permissions(role_id: int, session: AsyncSession, operation_
             await session.scalars(select(RolePermission.permission_id).where(RolePermission.role_id == role_id))
         ).all()
         if not _permissions:
-            raise exceptions.PermissionDenyError
+            raise auth_exceptions.PermissionDenyError
         permissions = [str(p) for p in _permissions]
         await redis_client.set_nx(name=str(role_id), value=permissions, namespace=CacheNamespace.ROLE_CACHE)
     if operation_id not in permissions:
-        raise exceptions.PermissionDenyError
+        raise auth_exceptions.PermissionDenyError
 
 
 SqlaSession = Annotated[AsyncSession, Depends(get_session)]

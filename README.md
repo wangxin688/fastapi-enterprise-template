@@ -14,8 +14,12 @@ Please notice that this project is still working in progress.
 11. I18N support for backed db and error message.
 12. X-request-id for logging and request.
 13. ...
+
+## Project Structure
+
 ## planning
 1. Fix some errors and type hint issues
 2. Enhance DTO base for better crud support.
 3. Release beta version.
 4. enhance docs.
+
