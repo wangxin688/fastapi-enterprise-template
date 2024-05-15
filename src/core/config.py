@@ -27,6 +27,7 @@ class Settings(BaseSettings):
     PROJECT_NAME: str = Field(default=PYPROJECT_CONTENT["name"])
     VERSION: str = Field(default=PYPROJECT_CONTENT["version"])
     DESCRIPTION: str = Field(default=PYPROJECT_CONTENT["description"])
+    ENABLE_LIMIT: bool = Field(default=False)
     LIMITED_RATE: tuple[int, int] = Field(default=(20, 10))
 
     WEB_SENTRY_DSN: str | None = Field(default=None)

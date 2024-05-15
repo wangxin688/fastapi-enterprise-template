@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 
-from src.auth.api import router as auth_router
+from src.features.auth.restapi import router as auth_router
 
 
 def register_router() -> APIRouter:
