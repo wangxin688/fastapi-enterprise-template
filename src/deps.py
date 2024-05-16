@@ -4,7 +4,7 @@ from typing import Annotated
 
 import jwt
 from fastapi import Depends, Request
-from fastapi.security import HTTPBearer
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -26,9 +26,15 @@ async def get_session() -> AsyncGenerator[AsyncSession, None]:
         yield session
 
 
-async def auth(request: Request, session: AsyncSession = Depends(get_session), token: str = Depends(token)) -> User:
+async def auth(
+    request: Request, session: AsyncSession = Depends(get_session), token: HTTPAuthorizationCredentials = Depends(token)
+) -> User:
+    if token.scheme != "Bearer":
+        raise auth_exceptions.TokenInvalidError
+    if not token:
+        raise auth_exceptions.TokenInvalidError
     try:
-        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[JWT_ALGORITHM])
+        payload = jwt.decode(token.credentials, settings.SECRET_KEY, algorithms=[JWT_ALGORITHM])
     except jwt.DecodeError as e:
         raise auth_exceptions.TokenInvalidError from e
     token_data = JwtTokenPayload(**payload)
@@ -41,7 +47,7 @@ async def auth(request: Request, session: AsyncSession = Depends(get_session), t
     if not user:
         raise auth_exceptions.NotFoundError(User.__visible_name__[locale_ctx.get()], "id", id)
     check_user_active(user.is_active)
-    operation_id = request.scope.get("operation_id")
+    operation_id = request.scope["route"].operation_id
     if not operation_id:
         raise
     privileged = check_privileged_role(user.role.slug, operation_id)
@@ -80,3 +86,11 @@ async def check_role_permissions(role_id: int, session: AsyncSession, operation_
 
 SqlaSession = Annotated[AsyncSession, Depends(get_session)]
 AuthUser = Annotated[User, Depends(auth)]
+
+
+# payload = jwt.decode(
+#     jwt="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3N1ZWRfYXQiOjE3MTU4NzAwNDEsImV4cGlyZXNfYXQiOjE3MTU4NzcyNDEsInN1YiI6IjEiLCJyZWZyZXNoIjpmYWxzZX0.FkM_X4lfUaBMpfmVFaVYagZcRfUYeEkO0JG4m0Nf5Lw",
+#     key=settings.SECRET_KEY,
+#     algorithms=[JWT_ALGORITHM],
+# )
+# print(payload)

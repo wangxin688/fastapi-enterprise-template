@@ -11,6 +11,16 @@ from src.core.database import types
 from src.core.models.base import Base
 from src.core.models.mixins import AuditTimeMixin
 
+__all__ = (
+    "Role",
+    "Permission",
+    "Menu",
+    "RolePermission",
+    "RoleMenu",
+    "User",
+    "Group",
+)
+
 
 class RolePermission(Base):
     __tablename__ = "role_permission"

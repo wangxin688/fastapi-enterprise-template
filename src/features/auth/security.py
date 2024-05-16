@@ -1,21 +1,16 @@
 import time
 from datetime import datetime
 
+import bcrypt
 import jwt
-from passlib.context import CryptContext
 from pydantic import BaseModel
 
-from src.auth.schemas import AccessToken
 from src.core.config import settings
+from src.features.auth.schemas import AccessToken
 
 JWT_ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_SECS = settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60
 REFRESH_TOKEN_EXPIRE_SECS = settings.REFRESH_TOKEN_EXPIRE_MINUTES * 60
-PWD_CONTEXT = CryptContext(
-    schemes=["bcrypt"],
-    deprecated="auto",
-    bcrypt__rounds=settings.SECURITY_BCRYPT_ROUNDS,
-)
 
 API_WHITE_LISTS: set[str] = set()
 
@@ -66,9 +61,9 @@ def generate_access_token_response(subject: int) -> AccessToken:
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     """Verify plain and hashed password matches."""
-    return PWD_CONTEXT.verify(plain_password, hashed_password)
+    return bcrypt.checkpw(plain_password.encode("utf-8"), hashed_password.encode("utf-8"))
 
 
 def get_password_hash(password: str) -> str:
     """Create hashed password from plain password."""
-    return PWD_CONTEXT.hash(password)
+    return bcrypt.hashpw(password.encode(), bcrypt.gensalt(settings.SECURITY_BCRYPT_ROUNDS)).decode()

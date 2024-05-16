@@ -31,33 +31,6 @@ repos:
         args: ["--py312-plus"]
         files: ".*"
 
-  - repo: https://github.com/RobertCraigie/pyright-python
-    rev: v1.1.341
-    hooks:
-      - id: pyright
-        exclude: "tests"
-        additional_dependencies:
-          [
-            fastapi,
-            faker,
-            pydantic>=2,
-            pytest,
-            sqlalchemy>=2,
-          ]
-  - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v1.10.0
-    hooks:
-      - id: mypy
-        exclude: "tests"
-        additional_dependencies:
-          [
-            fastapi,
-            faker,
-            pydantic>=2,
-            pytest,
-            sqlalchemy>=2,
-          ]
-
   - repo: local
     hooks:
     - id: pytest-check

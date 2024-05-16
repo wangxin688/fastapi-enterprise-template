@@ -4,11 +4,11 @@ import logging
 from collections import OrderedDict
 from collections.abc import Awaitable, Callable, Mapping
 from datetime import datetime
-from enum import IntEnum
+from enum import IntEnum, StrEnum
 from functools import partial, update_wrapper, wraps
 from hashlib import md5
 from inspect import Parameter, Signature, signature
-from typing import Any, NewType, get_type_hints
+from typing import Any, NewType, ParamSpec, TypeVar, get_type_hints
 from uuid import UUID
 
 import redis.asyncio as redis
@@ -20,8 +20,10 @@ from redis import Redis
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session
 
-from src.auth.models import User
-from src.core._types import AppStrEnum, P, R
+from src.features.auth.models import User
+
+P = ParamSpec("P")
+R = TypeVar("R")
 
 DEFAULT_CACHE_HEADER = "X-Cache"
 logger = logging.getLogger(__name__)
@@ -38,7 +40,7 @@ class RedisDBType(IntEnum):
     PUBSUB = 2
 
 
-class CacheNamespace(AppStrEnum):
+class CacheNamespace(StrEnum):
     API_CACHE = "api_"
     NORMAL_CACHE = "nc_"
     ROLE_CACHE = "role_"
@@ -73,18 +75,27 @@ class FastapiCache(redis.Redis):
     ignore_arg_types: list[ArgType] = ALWAYS_IGNORE_ARG_TYPES
 
     async def set_ex(self, name: str, value: Any, expire: int = 1800, namespace: CacheNamespace | None = None) -> Any:
-        return self.setex(name=namespace + name, time=expire, value=json.dumps(value))
+        key = name
+        if namespace:
+            key = namespace + name
+        return self.setex(name=key, time=expire, value=json.dumps(value))
 
     async def set_nx(self, name: str, value: Any, namespace: CacheNamespace | None = None) -> Any:
-        return await self.setnx(name=namespace + name, value=json.dumps(value, default=default))
+        key = name
+        if namespace:
+            key = namespace + name
+        return await self.setnx(name=key, value=json.dumps(value, default=default))
 
     async def get_cache(self, name: str, namespace: CacheNamespace | None = None) -> Any:
-        result = await self.get(name=namespace + name)
+        key = name
+        if namespace:
+            key = namespace + name
+        result = await self.get(name=key)
         if result:
             return json.loads(result)
         return None
 
-    def log(self, event: RedisEvent, msg: str | None = None, name: str | None = None, value: str | None = None) -> None:
+    def log(self, event: RedisEvent, msg: str | None = None, name: str | None = None, value: Any = None) -> None:
         message = f"| {event.name}"
         if msg:
             message += "f: {msg}"
@@ -96,12 +107,9 @@ class FastapiCache(redis.Redis):
 
     @staticmethod
     def request_is_not_cacheable(request: Request) -> bool:
-        return request and (
-            request.method not in ["GET"]
-            or any(
-                directive in request.headers.get(DEFAULT_CACHE_HEADER, "")
-                for directive in ["no-store", "no-cache", "must-revalidate"]
-            )
+        return request.method not in ["GET"] or any(
+            directive in request.headers.get(DEFAULT_CACHE_HEADER, "")
+            for directive in ["no-store", "no-cache", "must-revalidate"]
         )
 
     async def add_to_cache(self, name: str, value: dict | _T, expire: int) -> bool:
@@ -110,9 +118,9 @@ class FastapiCache(redis.Redis):
             response_data = value.model_dump() if isinstance(value, BaseModel) else value
         except TypeError:
             message = f"Object of type {type(value)} is not JSON-serializable"
-            self.log(RedisEvent.FAILED_TO_CACHE_KEY, mes=message, name=name, value=value)
+            self.log(RedisEvent.FAILED_TO_CACHE_KEY, msg=message, name=name, value=value)
             return False
-        cached = await self.setex(name, response_data, expire, CacheNamespace.API_CACHE)
+        cached = await self.set_ex(name, response_data, expire, namespace=CacheNamespace.API_CACHE)
         if cached:
             self.log(event=RedisEvent.KEY_ADDED_TO_CACHE, name=name)
         else:
@@ -120,7 +128,7 @@ class FastapiCache(redis.Redis):
         return cached
 
     async def check_cache(self, name: str) -> tuple[int, str]:
-        pipe = self._redis.pipeline()
+        pipe = self.pipeline()
         pipe.ttl(CacheNamespace.API_CACHE + name).get(CacheNamespace.API_CACHE + name)
         ttl, in_cache = await pipe.execute()
         return ttl, json.loads(in_cache) if in_cache else None
