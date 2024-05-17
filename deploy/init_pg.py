@@ -3,9 +3,10 @@ import asyncio
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.auth.models import Group, Role, User
-from src.db.session import async_session
-from src.enums import ReservedRoleSlug
+from src.core.database.session import async_session
+from src.features.auth.consts import ReservedRoleSlug
+from src.features.auth.models import Group, Role, User
+from src.features.auth.security import get_password_hash
 
 
 async def create_pg_extensions(session: AsyncSession) -> None:
@@ -26,7 +27,7 @@ async def create_init_user(session: AsyncSession) -> None:
             User(
                 name="Administrator",
                 email="admin@system.com",
-                password="admin",  # noqa: S106
+                password=get_password_hash("admin"),
                 role_id=new_role.id,
             )
         ],

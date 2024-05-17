@@ -1,11 +1,15 @@
+import asyncio
 from logging.config import fileConfig
+
+from alembic import context
 
 from sqlalchemy import engine_from_config
 from sqlalchemy import pool, Connection
 from sqlalchemy.ext.asyncio import AsyncEngine
-import asyncio
-from src import config as app_config
-from alembic import context
+
+from src.core import config as app_config
+from src.core.models.base import Base
+from src.features.auth.models import *  # noqa: F403
 
 
 # this is the Alembic Config object, which provides
@@ -14,13 +18,12 @@ config = context.config
 
 # Interpret the config file for Python logging.
 # This line sets up loggers basically.
-fileConfig(config.config_file_name)  # PGH003
+fileConfig(config.config_file_name)  # type: ignore # noqa: PGH003
 
 # add your model's MetaData object here
 # for 'autogenerate' support
 # from myapp import mymodel
 # target_metadata = mymodel.Base.metadata
-from src.db import Base  # noqa: E402
 
 target_metadata = Base.metadata
 

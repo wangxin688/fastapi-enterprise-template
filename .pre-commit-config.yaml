@@ -16,6 +16,9 @@ repos:
       - id: end-of-file-fixer
       - id: check-yaml
       - id: check-toml
+      - id: check-ast
+      - id: check-case-conflict
+      - id: mixed-line-ending
   - repo: https://github.com/crate-ci/typos
     rev: v1.16.22
     hooks:
@@ -25,7 +28,7 @@ repos:
     rev: v3.15.0
     hooks:
       - id: pyupgrade
-        args: ["--py311-plus"]
+        args: ["--py312-plus"]
         files: ".*"
 
   - repo: local
