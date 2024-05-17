@@ -43,7 +43,7 @@ def register_table_params(table_name: str, params: InspectorTableConstraint) -> 
 
 async def inspect_table(table_name: str) -> InspectorTableConstraint:
     """Reflect table schema to inspect unique constraints and many-to-one fks and cache in memory"""
-    if result := TABLE_PARAMS.get(table_name, None):  # noqa: PGH003 # type: ignore
+    if result := TABLE_PARAMS.get(table_name):  # type: ignore  # noqa: PGH003
         return result
     async with async_engine.connect() as conn:
         result: InspectorTableConstraint = {"unique_constraints": [], "foreign_keys": {}}
