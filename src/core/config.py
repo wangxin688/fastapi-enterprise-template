@@ -23,6 +23,7 @@ class Settings(BaseSettings):
     REFRESH_TOKEN_EXPIRE_MINUTES: int = Field(default=11520)
     BACKEND_CORS: list[str] = Field(default=["*"])
     ALLOWED_HOST: list[str] = Field(default=["*"])
+    BASE_URL: str = Field(default="http://localhost:8000")
 
     PROJECT_NAME: str = Field(default=PYPROJECT_CONTENT["name"])
     VERSION: str = Field(default=PYPROJECT_CONTENT["version"])

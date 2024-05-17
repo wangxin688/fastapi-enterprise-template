@@ -10,7 +10,7 @@ from src.core.utils.context import user_ctx
 if TYPE_CHECKING:
     from datetime import datetime
 
-    from src.features.auth.models import User
+    from src.features.admin.models import User
 
 
 class AuditUserMixin:

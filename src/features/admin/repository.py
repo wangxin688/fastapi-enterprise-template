@@ -7,9 +7,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from src.core.errors.auth_exceptions import NotFoundError, PermissionDenyError
 from src.core.repositories import BaseRepository
 from src.core.utils.context import locale_ctx
-from src.features.auth import schemas
-from src.features.auth.models import Group, Menu, Permission, Role, User
-from src.features.auth.security import verify_password
+from src.features.admin import schemas
+from src.features.admin.models import Group, Menu, Permission, Role, User
+from src.features.admin.security import verify_password
 
 
 class UserRepo(BaseRepository[User, schemas.UserCreate, schemas.UserUpdate, schemas.UserQuery]):
@@ -66,3 +66,10 @@ class GroupRepo(BaseRepository[Group, schemas.GroupCreate, schemas.GroupUpdate, 
 
 class RoleRepo(BaseRepository[Role, schemas.RoleCreate, schemas.RoleUpdate, schemas.RoleQuery]):
     ...
+
+
+user_repo = UserRepo(User)
+permission_repo = PermissionRepo(Permission)
+menu_repo = MenuRepo(Menu)
+group_repo = GroupRepo(Group)
+role_repo = RoleRepo(Role)

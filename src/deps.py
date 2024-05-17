@@ -13,9 +13,9 @@ from src.core.config import settings
 from src.core.database.session import async_session
 from src.core.errors import auth_exceptions
 from src.core.utils.context import locale_ctx
-from src.features.auth.consts import ReservedRoleSlug
-from src.features.auth.models import RolePermission, User
-from src.features.auth.security import API_WHITE_LISTS, JWT_ALGORITHM, JwtTokenPayload
+from src.features.admin.consts import ReservedRoleSlug
+from src.features.admin.models import RolePermission, User
+from src.features.admin.security import API_WHITE_LISTS, JWT_ALGORITHM, JwtTokenPayload
 from src.libs.redis.cache import CacheNamespace, redis_client
 
 token = HTTPBearer()
@@ -86,11 +86,3 @@ async def check_role_permissions(role_id: int, session: AsyncSession, operation_
 
 SqlaSession = Annotated[AsyncSession, Depends(get_session)]
 AuthUser = Annotated[User, Depends(auth)]
-
-
-# payload = jwt.decode(
-#     jwt="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3N1ZWRfYXQiOjE3MTU4NzAwNDEsImV4cGlyZXNfYXQiOjE3MTU4NzcyNDEsInN1YiI6IjEiLCJyZWZyZXNoIjpmYWxzZX0.FkM_X4lfUaBMpfmVFaVYagZcRfUYeEkO0JG4m0Nf5Lw",
-#     key=settings.SECRET_KEY,
-#     algorithms=[JWT_ALGORITHM],
-# )
-# print(payload)

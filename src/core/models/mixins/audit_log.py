@@ -15,7 +15,7 @@ if TYPE_CHECKING:
     from datetime import datetime
 
     from src.core.models.base import ModelT
-    from src.features.auth.models import User
+    from src.features.admin.models import User
 
 
 def get_object_change(obj: Mapper) -> dict:

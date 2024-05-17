@@ -6,7 +6,7 @@ import jwt
 from pydantic import BaseModel
 
 from src.core.config import settings
-from src.features.auth.schemas import AccessToken
+from src.features.admin.schemas import AccessToken
 
 JWT_ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_SECS = settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60

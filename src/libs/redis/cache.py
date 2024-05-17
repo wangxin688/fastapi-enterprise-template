@@ -20,7 +20,7 @@ from redis import Redis
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session
 
-from src.features.auth.models import User
+from src.features.admin.models import User
 
 P = ParamSpec("P")
 R = TypeVar("R")
