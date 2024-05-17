@@ -64,7 +64,7 @@ ignore = ["D", "G002", "DTZ003", "ANN401", "ANN101", "ANN102", "EM101", "PD901",
 fixable = ["ALL"]
 
 
-[tool.ruff.extend-per-file-ignores]
+[tool.ruff.lint.extend-per-file-ignores]
 "env.py" = ["INP001", "I001", "ERA001"]
 "tests/*.py" = ["S101", "ANN201"]
 "*exceptions.py" = ["ARG001"]
@@ -76,7 +76,7 @@ fixable = ["ALL"]
 "alembic/*.py" = ["INP001", "UP007"]
 "__init__.py" = ["F403"]
 
-[tool.ruff.flake8-bugbear]
+[tool.ruff.lint.flake8-bugbear]
 extend-immutable-calls=[
     "fastapi.Depends",
     "fastapi.Query",
