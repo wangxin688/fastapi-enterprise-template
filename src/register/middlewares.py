@@ -4,7 +4,7 @@ import time
 import uuid
 from collections.abc import Callable
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import UTC, datetime
 
 import pandas as pd
 from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
@@ -40,11 +40,11 @@ class RequestMiddleware(BaseHTTPMiddleware):
                 response_data = _res.decode()
                 if response_data:
                     response_data = json.loads(response_data)
-                    csv_result = response_data.get("data", {}).get("results", [])
+                    csv_result = response_data.get("results", [])
                     df = pd.DataFrame(csv_result)
                     output = io.StringIO()
                     df.to_csv(output, encoding="utf-8", index=False)
-                    filename = f"exporting_data_{datetime.utcnow().strftime('%Y%m%d %H%M%S')}.csv"
+                    filename = f"exporting_data_{datetime.now(tz=UTC).strftime('%Y%m%d %H%M%S')}.csv"
                     csv_resp = StreamingResponse(iter([output.getvalue()]), media_type="application/otect-stream")
                     csv_resp.headers["Content-Disposition"] = f'attachment; filename="{filename}.csv"'
                     csv_resp.headers[self.id_header] = request_id

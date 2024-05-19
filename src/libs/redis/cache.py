@@ -141,7 +141,7 @@ class FastapiCache(redis.Redis):
 redis_client: FastapiCache = None
 
 
-def _get_cache_key(func: Callable, *args: P.args, **kwargs: P.kwargs) -> str:
+def _get_cache_key(func: Callable, *args: Any, **kwargs: Any) -> str:
     sig = signature(func)
     type_hints = get_type_hints(func)
     func_args = _get_func_args(sig, *args, **kwargs)
@@ -154,7 +154,7 @@ def _get_cache_key(func: Callable, *args: P.args, **kwargs: P.kwargs) -> str:
     return md5(f"{func.__module__}.{func.__name__}({args_str})".encode()).hexdigest()  # noqa: S324
 
 
-def _get_func_args(sig: Signature, *args: P.args, **kwargs: P.kwargs) -> OrderedDict[str, Any]:
+def _get_func_args(sig: Signature, *args: Any, **kwargs: Any) -> OrderedDict[str, Any]:
     func_args = sig.bind(*args, **kwargs)
     func_args.apply_defaults()
     return func_args.arguments
@@ -170,7 +170,7 @@ async def _get_api_response_async(
     )
 
 
-def cache(*, expire: int | None = 600):  # noqa: ANN201
+def cache(*, expire: int = 600):  # noqa: ANN201
     def outer(func: Callable[P, Awaitable[R]]) -> Callable[P, Awaitable[R, Response]]:
         @wraps(func)
         async def inner(*args: P.args, **kwargs: P.kwargs) -> R | Response:
