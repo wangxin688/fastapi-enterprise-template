@@ -2,9 +2,7 @@
 name = "fastapi-enterprise-template"
 version = "0.1.0"
 description = "cookiecutter enterprise template for fastapi"
-authors = [
-    { name = "jeffry", email = "182467653@qq.com" }
-]
+authors = [{ name = "jeffry", email = "182467653@qq.com" }]
 dependencies = [
     "fastapi>=0.108.0",
     "alembic>=1.13.1",
@@ -13,7 +11,7 @@ dependencies = [
     "uvicorn[standard]>=0.25.0",
     "pyjwt>=2.8.0",
     "pandas>=2.1.4",
-    "redis>=5.0.1",
+    "redis>=5.0.6",
     "sentry_sdk>=1.39.2",
     "httpx>=0.26.0",
     "pydantic_extra_types>=2.4.1",
@@ -23,6 +21,7 @@ dependencies = [
     "cryptography>=42.0.7",
     "bcrypt>=4.1.3",
     "gunicorn>=22.0.0",
+    "aio-pika>=9.4.1",
 ]
 readme = "README.md"
 requires-python = ">= 3.12"
@@ -61,7 +60,24 @@ target-version = "py312"
 
 [tool.ruff.lint]
 select = ["ALL"]
-ignore = ["D", "G002", "DTZ003", "ANN401", "ANN101", "ANN102", "EM101", "PD901", "COM812", "ISC001", "FBT", "A003", "PLR0913", "G004", "E501"]
+ignore = [
+    "D",
+    "G002",
+    "DTZ003",
+    "ANN401",
+    "ANN101",
+    "ANN102",
+    "EM101",
+    "PD901",
+    "COM812",
+    "ISC001",
+    "FBT",
+    "A003",
+    "PLR0913",
+    "G004",
+    "E501",
+    "TRY003",
+]
 fixable = ["ALL"]
 
 
@@ -73,12 +89,12 @@ fixable = ["ALL"]
 "api.py" = ["A002", "B008"]
 "deps.py" = ["B008"]
 "src/internal/api.py" = ["ARG001"]
-"src/auth/schemas.py" = ["N815"] # frontend menu
+"src/auth/schemas.py" = ["N815"]        # frontend menu
 "alembic/*.py" = ["INP001", "UP007"]
 "__init__.py" = ["F403"]
 
 [tool.ruff.lint.flake8-bugbear]
-extend-immutable-calls=[
+extend-immutable-calls = [
     "fastapi.Depends",
     "fastapi.Query",
     "fastapi.params_functions.Form",
@@ -115,7 +131,7 @@ exclude_lines = [
 ]
 
 [tool.coverage.run]
-concurrency=["thread", "greenlet"]
+concurrency = ["thread", "greenlet"]
 
 [tool.mypy]
 exclude = "^tools/.*"
@@ -141,3 +157,5 @@ warn_untyped_fields = true
 
 [tool.pyright]
 include = ["src", "tests", "examples"]
+reportIncompatibleVariableOverride = false
+pythonVersion = "3.12"
