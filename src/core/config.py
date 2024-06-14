@@ -1,6 +1,7 @@
 import tomllib
 from enum import StrEnum
 from pathlib import Path
+from typing import Literal
 
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -44,6 +45,10 @@ class Settings(BaseSettings):
     REDIS_DSN: str = Field(default="redis://:cfe1c2c4703abb205d71abdc07cc3f3d@localhost:6379")
 
     ENV: str = _Env.DEV.name
+    RUNNING_MODE: Literal["uvicorn", "gunicorn"] | None = Field(default="uvicorn")
+    WORKERS: int | None = Field(default=1, gt=0)
+    LISTENING_HOST: str = Field(default="0.0.0.0")  # noqa: S104
+    LISTENING_PORT: int = Field(default=8000, gt=0, le=65535)
 
     model_config = SettingsConfigDict(env_file=f"{PROJECT_DIR}/.env", case_sensitive=True, extra="allow")
 

@@ -13,8 +13,8 @@ from src.core.utils.validators import list_to_tree
 from src.deps import auth, get_session
 from src.features.admin import schemas
 from src.features.admin.models import Group, Permission, Role, User
-from src.features.admin.repository import group_repo, menu_repo, permission_repo, role_repo, user_repo
 from src.features.admin.security import generate_access_token_response
+from src.features.admin.services import group_repo, menu_repo, permission_repo, role_repo, user_repo
 
 router = APIRouter()
 

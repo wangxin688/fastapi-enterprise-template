@@ -19,30 +19,30 @@ LOGGING = {
     "formatters": {
         "default": {
             "format": (
-                "%(asctime)s | %(levelname)s | %(request_id)% | %(filename)s:%(funcName)s:%(lineno)d | %(message)s"
-            ),
-            "celery": {
-                "format": (
-                    "%(asctime)s | %(levelname)s | %(request_id)% [%(celery_parent_id)s-%(celery_current_id)s] |"
-                    " %(filename)s:%(funcName)s:%(lineno)d | %(message)s"
-                ),
-            },
+                "%(asctime)s | %(levelname)s | %(request_id)s | %(filename)s:%(funcName)s:%(lineno)d | %(message)s"
+            )
+        },
+        "celery": {
+            "format": (
+                "%(asctime)s | %(levelname)s | %(request_id)s [%(celery_parent_id)s-%(celery_current_id)s] |"
+                " %(filename)s:%(funcName)s:%(lineno)d | %(message)s"
+            )
         },
     },
     "handlers": {
         "stdout": {
-            "level": "DEBUG",
+            "level": "INFO",
             "class": "logging.StreamHandler",
             "formatter": "default",
             "stream": "ext://sys.stderr",
-        },
+        }
     },
     "loggers": {
-        "gunicorn.access": {"handlers": ["stdout"], "propagate": True, "level": "DEBUG"},
-        "guncorn.error": {"handlers": ["stdout"], "propagate": True, "level": "DEBUG"},
-        "celery": {"handlers": ["stdout"], "propagate": True, "level": "DEBUG"},
-        "celery.app.trace": {"handlers": ["stdout"], "propagate": False, "level": "DEBUG"},
-        "": {"handlers": ["stdout"], "propagate": False, "level": "DEBUG"},
+        "gunicorn.access": {"handlers": ["stdout"], "propagate": True, "level": "INFO"},
+        "guncorn.error": {"handlers": ["stdout"], "propagate": True, "level": "ERROR"},
+        "celery": {"handlers": ["stdout"], "propagate": False, "level": "INFO"},
+        "celery.app.trace": {"handlers": ["stdout"], "propagate": False, "level": "INFO"},
+        "": {"handlers": ["stdout"], "propagate": False, "level": "INFO"},
     },
 }
 

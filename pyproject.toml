@@ -22,6 +22,7 @@ dependencies = [
     "sqladmin>=0.16.1",
     "cryptography>=42.0.7",
     "bcrypt>=4.1.3",
+    "gunicorn>=22.0.0",
 ]
 readme = "README.md"
 requires-python = ">= 3.12"
@@ -60,7 +61,7 @@ target-version = "py312"
 
 [tool.ruff.lint]
 select = ["ALL"]
-ignore = ["D", "G002", "DTZ003", "ANN401", "ANN101", "ANN102", "EM101", "PD901", "COM812", "ISC001", "FBT", "A003", "PLR0913", "G004"]
+ignore = ["D", "G002", "DTZ003", "ANN401", "ANN101", "ANN102", "EM101", "PD901", "COM812", "ISC001", "FBT", "A003", "PLR0913", "G004", "E501"]
 fixable = ["ALL"]
 
 
@@ -69,7 +70,7 @@ fixable = ["ALL"]
 "tests/*.py" = ["S101", "ANN201"]
 "*exceptions.py" = ["ARG001"]
 "models.py" = ["RUF012"]
-"restapi.py" = ["A002", "B008"]
+"api.py" = ["A002", "B008"]
 "deps.py" = ["B008"]
 "src/internal/api.py" = ["ARG001"]
 "src/auth/schemas.py" = ["N815"] # frontend menu

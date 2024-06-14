@@ -6,7 +6,7 @@ from typing import Any, ClassVar
 
 from src.core.utils.context import locale_ctx
 from src.core.utils.singleton import singleton
-from src.openapi import translations
+from src.core.utils.translations import translations
 
 
 @singleton
@@ -36,5 +36,5 @@ class I18n:
             return f"missing translation for {language}"
 
 
-_i18n: I18n = I18n()
+_i18n = I18n()
 _: Callable[..., dict | str] = _i18n.gettext
