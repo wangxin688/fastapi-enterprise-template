@@ -9,7 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncEngine
 
 from src.core import config as app_config
 from src.core.models.base import Base
-from src.features.auth.models import *  # noqa: F403
+from src.features.admin.models import *  # noqa: F403
 
 
 # this is the Alembic Config object, which provides

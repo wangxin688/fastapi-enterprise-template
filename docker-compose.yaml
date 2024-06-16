@@ -12,6 +12,8 @@ services:
       - .env
   postgres:
     image: postgres:latest
+    restart: unless-stopped
+    container_name: "postgres"
     ports:
       - "${DEFAULT_DB_PORT}:5432"
     volumes:
@@ -22,3 +24,32 @@ services:
       - POSTGRES_DB=${DEFAULT_DB_NAME}
     env_file:
       - .env
+
+  rabbitmq:
+    image: rabbitmq:3.13.3-management
+    container_name: "rabbitmq"
+    restart: unless-stopped
+    ports:
+      - "${MQ_AMQP_PORT}:5672"
+      - "${MQ_MGMT_PORT}:15672"
+    volumes:
+      - ./data/rabbitmq:/var/lib/rabbitmq
+    environment:
+      - RABBITMQ_DEFAULT_USER=${MQ_DEFAULT_USER}
+      - RABBITMQ_DEFAULT_PASS=${MQ_DEFAULT_PASS}
+    env_file:
+      - .env
+  # app:
+  #   depends_on:
+  #     - redis
+  #     - postgres
+  #     - rabbitmq
+  #   build:
+  #     context: .
+  #     dockerfile: ./Dockerfile
+  #   container_name: "app"
+  #   restart: unless-stopped
+  #   ports:
+  #     - "${APP_PORT}:8000"
+  #   volumes:
+  #     - ./data/app:/var/lib/app
