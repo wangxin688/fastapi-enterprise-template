@@ -100,5 +100,4 @@ class IdResponse(BaseModel):
     id: int
 
 
-class IdCreate(IdResponse):
-    ...
+class IdCreate(IdResponse): ...

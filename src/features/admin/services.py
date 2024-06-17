@@ -57,12 +57,10 @@ class MenuRepo(BaseRepository[Menu, schemas.MenuCreate, schemas.MenuUpdate, sche
         return (await session.scalars(select(self.model))).all()
 
     @staticmethod
-    def menu_tree_transform(menus: Sequence[Menu]) -> list[dict]:
-        ...
+    def menu_tree_transform(menus: Sequence[Menu]) -> list[dict]: ...
 
 
-class GroupRepo(BaseRepository[Group, schemas.GroupCreate, schemas.GroupUpdate, schemas.GroupQuery]):
-    ...
+class GroupRepo(BaseRepository[Group, schemas.GroupCreate, schemas.GroupUpdate, schemas.GroupQuery]): ...
 
 
 class RoleRepo(BaseRepository[Role, schemas.RoleCreate, schemas.RoleUpdate, schemas.RoleQuery]):

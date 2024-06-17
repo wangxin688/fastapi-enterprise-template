@@ -84,13 +84,13 @@ class BaseRepository(Generic[ModelT, CreateSchemaType, UpdateSchemaType, QuerySc
 
     @overload
     @classmethod
-    def get_id_attribute_value(cls, obj: ModelT, id_attribute: str | None = None) -> PkIdT:
-        ...
+    def get_id_attribute_value(cls, obj: ModelT, id_attribute: str | None = None) -> PkIdT: ...
 
     @overload
     @classmethod
-    def get_id_attribute_value(cls, obj: type[ModelT], id_attribute: str | None = None) -> InstrumentedAttribute[PkIdT]:
-        ...
+    def get_id_attribute_value(
+        cls, obj: type[ModelT], id_attribute: str | None = None
+    ) -> InstrumentedAttribute[PkIdT]: ...
 
     @classmethod
     def get_id_attribute_value(
@@ -109,7 +109,8 @@ class BaseRepository(Generic[ModelT, CreateSchemaType, UpdateSchemaType, QuerySc
         return getattr(obj, id_attribute if id_attribute is not None else cls.id_attribute)
 
     def inspect_relationship(self) -> dict[str, type["RelationT"]]:
-        result: dict[str, type["RelationT"]] = {}
+        result: dict[str, type[RelationT]] = {}
+
         insp = inspect(self.model)
         for relationship in insp.relationships:
             key = relationship.key
@@ -311,12 +312,10 @@ class BaseRepository(Generic[ModelT, CreateSchemaType, UpdateSchemaType, QuerySc
         return stmt
 
     @overload
-    def _check_not_found(self, instance: ModelT | None, column: str, value: Any) -> ModelT:
-        ...
+    def _check_not_found(self, instance: ModelT | None, column: str, value: Any) -> ModelT: ...
 
     @overload
-    def _check_not_found(self, instance: Row[Any] | None, column: str, value: Any) -> Row[Any]:
-        ...
+    def _check_not_found(self, instance: Row[Any] | None, column: str, value: Any) -> Row[Any]: ...
 
     def _check_not_found(self, instance: ModelT | Row[Any] | None, column: str, value: Any) -> ModelT | Row[Any]:
         """

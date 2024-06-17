@@ -24,16 +24,13 @@ class Permission(BaseModel):
     tag: str
 
 
-class PermissionCreate(BaseModel):
-    ...
+class PermissionCreate(BaseModel): ...
 
 
-class PermissionUpdate(QueryParams):
-    ...
+class PermissionUpdate(QueryParams): ...
 
 
-class PermissionQuery(QueryParams):
-    ...
+class PermissionQuery(QueryParams): ...
 
 
 class UserBase(BaseModel):
@@ -118,8 +115,7 @@ class MenuUpdate(BaseModel):
     parent_id: int | None = None
 
 
-class MenuQuery(QueryParams):
-    ...
+class MenuQuery(QueryParams): ...
 
 
 class UserCreate(UserBase):
@@ -176,13 +172,10 @@ class RoleList(RoleBase, AuditTime):
     permission_count: int
 
 
-class UserQuery(QueryParams):
-    ...
+class UserQuery(QueryParams): ...
 
 
-class GroupQuery(QueryParams):
-    ...
+class GroupQuery(QueryParams): ...
 
 
-class RoleQuery(QueryParams):
-    ...
+class RoleQuery(QueryParams): ...

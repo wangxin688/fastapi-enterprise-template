@@ -68,5 +68,4 @@ def get_stoplight_elements_html(
     return HTMLResponse(html)
 
 
-def get_open_api_intro() -> str:
-    ...
+def get_open_api_intro() -> str: ...
