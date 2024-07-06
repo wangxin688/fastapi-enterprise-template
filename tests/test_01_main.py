@@ -7,5 +7,5 @@ if TYPE_CHECKING:
 
 
 async def test_main(client: "AsyncClient") -> None:
-    response = await client.get("/docs")
+    response = await client.get("/api/docs")
     assert response.status_code == status.HTTP_200_OK

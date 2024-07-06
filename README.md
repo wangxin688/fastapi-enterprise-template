@@ -166,5 +166,103 @@ tests/                                      # pytest entry
 └── test_01_main.py
 ```
 
-## Step by step examples
-> coming soon
+# Step by step examples
+---
+> I will show you a example to write a crud api to create a Book with Author and Publisher
+> to show one-to-many and many-to-many cases.
+> add a new app to `src/features` is recommend directory for business logic.
+
+- `POST` endpoint for create a new object
+- `PUT` endpoint for update object
+- `GET` endponit for get object
+- `DELETE` endpoint for delete object
+
+## Create Sqlalchemy Model
+Add `Book` `Author` `Publisher` model to `src/features/books/models.py`.
+> Sqlalchemy 2.x is strongly recommend for type annotations. New > style API is very easy to use.
+```python3
+(...)
+from src.core.models.base import Base
+from src.core.database.types.annotated import int_pk
+from src.core.models.mixins import AuditTimeMixin, AuditLogMixin, AuditUserMixin
+
+class Book(Base, AuditTimeMixin):
+    __tablename__ = 'book'
+    id: Mapped[int_pk]
+    name: Mapped[str] = mapped_column(unique=True, index=True)
+    author_id: Mapped[int] = mapped_colunm(ForeignKey("author.id", ondelete="CASCADE"))
+    author: Mapped["Author"] = relationship(back_populates="book")
+    publisher: Mapped[list["Publisher"]] = relationship(
+        secondary="book_publisher", back_populates="book"
+    )
+
+class Author(Base, AuditLogMixin):
+    __tablename__ = "author"
+    id: Mapped[int_pk]
+    name: Mapped[str]
+    books: Mapped[list["Book"]] = relationship(back_populates="author")
+
+
+class BookPublisher(Base):
+    __tablename__ = "book_publisher"
+    id: Mapped[int_pk]
+    book_id: Mapped[int] = mapped_colunm(ForeignKey("book.id"), primary_key=True)
+    publisher_id: Mapped[int] = mapped_colunm(ForeignKey("author.id"), primary_key=True)
+
+class Publisher(Base, AuditUserMixin):
+    __tablename__ = "publisher"
+    id: Mapped[int_pk]
+    name: Mapped[str]
+    book: Mapped[list["Book"]] = relationship(
+        secondary="book_publisher", back_populates="publisher"
+    )
+
+```
+## 2. create alembic migration
+> import models to `alembic/env.py` first
+```
+### Use below commands in root folder in virtualenv ###
+
+# if you see FAILED: Target database is not up to date.
+# first use alembic upgrade head
+
+# Create migration with alembic revision
+alembic revision --autogenerate -m "create_book_model"
+
+
+# a new version file "xxxx_create_book_model_xxxxx.py" should appear in `/alembic/versions` folder
+
+
+# Apply migration using alembic upgrade
+alembic upgrade head
+
+# (...)
+# INFO  [alembic.runtime.migration] Running upgrade xxxxx -> xxxx, create_book_model
+```
+
+## 3. create pedantic schema for response and request
+```python
+(...)
+from fastapi import Query
+
+from src.core._types import AuditTime, BaseModel, IdCreate, QueryParams
+
+class BookBase(BaseModel):
+    name: str
+
+class BookCreate(BookBase):
+    author_id: int | None = None
+    publisher: list[IdCreate] | None = None
+
+class BookQuery(QueryParams)
+    name: list[str] | None = Field(Query(default=[]))
+    created_at__gte: datetime | None = None
+    created_at__lte: datetime | None = None
+
+class Book(BookCreate, AuditTime):
+    id: int
+    author: "Author" | None = None
+
+class AuthorBase(BaseModel):
+    name: str
+```

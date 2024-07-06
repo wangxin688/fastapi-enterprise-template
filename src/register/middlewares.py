@@ -20,7 +20,7 @@ class RequestMiddleware(BaseHTTPMiddleware):
     time_header = "x-request-time"
     id_header = "x-request-id"
 
-    async def dispatch(self, request: Request, call_next: RequestResponseEndpoint) -> Response:
+    async def dispatch_func(self, request: Request, call_next: RequestResponseEndpoint) -> Response:
         start_time = time.time()
         request_id = str(uuid.uuid4())
         request_id_ctx.set(request_id)
