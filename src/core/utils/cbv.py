@@ -20,9 +20,7 @@ def _check_classvar(v: type[Any | None]) -> bool:
 
 
 def is_classvar(any_type: type[Any]) -> bool:
-    if any_type.__class__ == ForwardRef and any_type.__forward_arg__.startswith("ClassVar["):
-        return True
-    return False
+    return bool(any_type.__class__ == ForwardRef and any_type.__forward_arg__.startswith("ClassVar["))
 
 
 def cbv(router: APIRouter, *urls: str) -> Callable[[type[T]], type[T]]:

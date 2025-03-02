@@ -49,7 +49,7 @@ async def auth(
     check_user_active(user.is_active)
     operation_id = request.scope["route"].operation_id
     if not operation_id:
-        raise
+        raise auth_exceptions.PermissionDenyError
     privileged = check_privileged_role(user.role.slug, operation_id)
     if privileged:
         return user
@@ -65,9 +65,7 @@ def check_user_active(is_active: bool) -> None:
 def check_privileged_role(slug: str, operation_id: str) -> bool:
     if slug == ReservedRoleSlug.ADMIN:
         return True
-    if operation_id in API_WHITE_LISTS:
-        return True
-    return False
+    return operation_id in API_WHITE_LISTS
 
 
 async def check_role_permissions(role_id: int, session: AsyncSession, operation_id: str) -> None:

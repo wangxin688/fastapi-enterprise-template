@@ -12,13 +12,13 @@ from src.core.models.base import Base
 from src.core.models.mixins import AuditTimeMixin
 
 __all__ = (
-    "Role",
-    "Permission",
-    "Menu",
-    "RolePermission",
-    "RoleMenu",
-    "User",
     "Group",
+    "Menu",
+    "Permission",
+    "Role",
+    "RoleMenu",
+    "RolePermission",
+    "User",
 )
 
 

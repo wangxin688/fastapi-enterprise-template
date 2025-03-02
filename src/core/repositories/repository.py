@@ -152,18 +152,23 @@ class BaseRepository(Generic[ModelT, CreateSchemaType, UpdateSchemaType, QuerySc
         for field in self.model.__search_fields__:
             _t = getattr(self.model, field).type
             if type(_t) in casting_types:
-                if ignore_case:
-                    where_clauses.append(cast(getattr(self.model, field), Text).ilike(search_text))
-                else:
-                    where_clauses.append(cast(getattr(self.model, field), Text).like(search_text))
-            elif ignore_case:
-                where_clauses.append(getattr(self.model, field).ilike(search_text))
+                clause = (
+                    cast(getattr(self.model, field), Text).ilike(search_text)
+                    if ignore_case
+                    else cast(getattr(self.model, field), Text).like(search_text)
+                )
             else:
-                where_clauses.append(getattr(self.model, field).like(search_text))
-
+                clause = (
+                    getattr(self.model, field).ilike(search_text)
+                    if ignore_case
+                    else getattr(self.model, field).like(search_text)
+                )
+            where_clauses.append(clause)
         return stmt.where(or_(False, *where_clauses))
 
-    def _apply_order_by(self, stmt: Select[tuple[ModelT]], order_by: str, order: Order) -> Select[tuple[ModelT]]:
+    def _apply_order_by(
+        self, stmt: Select[tuple[ModelT]], order_by: list[str] | str, order: Order
+    ) -> Select[tuple[ModelT]]:
         """
         Applies an order by clause to the given SELECT statement.
 
@@ -175,11 +180,22 @@ class BaseRepository(Generic[ModelT, CreateSchemaType, UpdateSchemaType, QuerySc
         Returns:
             Select[tuple[ModelT]]: The modified SELECT statement with the order by clause applied.
         """
-        return (
-            stmt.order_by(desc(getattr(self.model, order_by)))
-            if order == "ascend"
-            else stmt.order_by(getattr(self.model, order_by))
-        )
+        if isinstance(order_by, str):
+            if not hasattr(self.model, order_by):
+                return stmt
+            return stmt.order_by(
+                desc(getattr(self.model, order_by))
+                if order == "descend"
+                else stmt.order_by(getattr(self.model, order_by))
+            )
+        for field in order_by:
+            if not hasattr(self.model, field):
+                return stmt
+            if order == "descend":
+                stmt = stmt.order_by(desc(getattr(self.model, field)))
+            else:
+                stmt = stmt.order_by(getattr(self.model, field))
+        return stmt
 
     def _apply_pagination(self, stmt: Select[tuple[ModelT]], limit: int = 20, offset: int = 0) -> Select[tuple[ModelT]]:
         """
@@ -312,12 +328,15 @@ class BaseRepository(Generic[ModelT, CreateSchemaType, UpdateSchemaType, QuerySc
         return stmt
 
     @overload
-    def _check_not_found(self, instance: ModelT | None, column: str, value: Any) -> ModelT: ...
+    def _check_not_found(self, instance: None, column: str, value: Any) -> None: ...
 
     @overload
-    def _check_not_found(self, instance: Row[Any] | None, column: str, value: Any) -> Row[Any]: ...
+    def _check_not_found(self, instance: ModelT, column: str, value: Any) -> ModelT: ...
 
-    def _check_not_found(self, instance: ModelT | Row[Any] | None, column: str, value: Any) -> ModelT | Row[Any]:
+    @overload
+    def _check_not_found(self, instance: Row[Any], column: str, value: Any) -> Row[Any]: ...
+
+    def _check_not_found(self, instance: ModelT | Row[Any] | None, column: str, value: Any) -> ModelT | Row[Any] | None:
         """
         Check if the given instance is not found in the specified table.
 

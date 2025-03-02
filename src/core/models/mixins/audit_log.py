@@ -27,7 +27,7 @@ def get_object_change(obj: Mapper) -> dict:
     for attr in class_mapper(obj.__class__).column_attrs:
         before = None
         after = None
-        if getattr(insp.attrs, attr.key).hisotry.has_changes():
+        if getattr(insp.attrs, attr.key).history.has_changes():
             if get_history(obj, attr.key)[2]:
                 before = get_history(obj, attr.key)[2].pop()
                 after = getattr(obj, attr.key)

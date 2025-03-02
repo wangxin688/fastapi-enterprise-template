@@ -7,7 +7,7 @@ from src.core._types import AuditTime, BaseModel, IdCreate, QueryParams
 
 
 class AccessToken(BaseModel):
-    token_type: str = "Bearer"
+    token_type: str = "Bearer"  # noqa: S105
     access_token: str
     expires_at: datetime
     issued_at: datetime

@@ -1,3 +1,4 @@
+from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Request, status
@@ -21,8 +22,8 @@ router = APIRouter()
 
 @router.post("/pwd-login", operation_id="c5f719b1-7adf-4b4e-a498-732b8da7d758")
 async def login_pwd(
-    user: OAuth2PasswordRequestForm = Depends(),
-    session: AsyncSession = Depends(get_session),
+    user: Annotated[OAuth2PasswordRequestForm, Depends()],
+    session: Annotated[AsyncSession, Depends(get_session)],
 ) -> schemas.AccessToken:
     result = await user_repo.verify_user(session, user)
     return generate_access_token_response(result.id)
@@ -54,7 +55,7 @@ class UserAPI:
         return schemas.UserDetail.model_validate(db_user)
 
     @router.get("/users", operation_id="2485e2a2-4d81-4601-a6fd-c633b23ce5fc")
-    async def get_users(self, query: schemas.UserQuery = Depends()) -> ListT[schemas.UserDetail]:
+    async def get_users(self, query: Annotated[schemas.UserQuery, Depends()]) -> ListT[schemas.UserDetail]:
         count, results = await user_repo.list_and_count(
             self.session,
             query,
@@ -95,7 +96,7 @@ class GroupAPI:
         return schemas.GroupDetail.model_validate(db_group)
 
     @router.get("/groups", operation_id="a1d1f8f1-4d4d-4fab-868b-3f977df26e05")
-    async def get_groups(self, query: schemas.GroupQuery = Depends()) -> ListT[schemas.GroupDetail]:
+    async def get_groups(self, query: Annotated[schemas.GroupQuery, Depends()]) -> ListT[schemas.GroupDetail]:
         count, results = await group_repo.list_and_count(self.session, query)
         return ListT(count=count, results=[schemas.GroupDetail.model_validate(r) for r in results])
 
@@ -128,7 +129,7 @@ class RoleAPI:
         return schemas.RoleDetail.model_validate(db_role)
 
     @router.get("/roles", operation_id="c5f793b1-7adf-4b4e-a498-732b0fa7d758")
-    async def get_roles(self, query: schemas.RoleQuery = Depends()) -> ListT[schemas.RoleList]:
+    async def get_roles(self, query: Annotated[schemas.RoleQuery, Depends()]) -> ListT[schemas.RoleList]:
         count, results = await role_repo.list_and_count(self.session, query)
         return ListT(count=count, results=[schemas.RoleList.model_validate(r) for r in results])
 
