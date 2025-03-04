@@ -37,6 +37,8 @@ cryptography==42.0.7
     # via fastapi-enterprise-template
 fastapi==0.115.11
     # via fastapi-enterprise-template
+greenlet==3.1.1
+    # via fastapi-enterprise-template
 gunicorn==22.0.0
     # via fastapi-enterprise-template
 h11==0.14.0
@@ -60,14 +62,10 @@ markupsafe==2.1.3
     # via wtforms
 multidict==6.0.5
     # via yarl
-numpy==1.26.3
-    # via pandas
 packaging==24.1
     # via gunicorn
 pamqp==3.3.0
     # via aiormq
-pandas==2.1.4
-    # via fastapi-enterprise-template
 phonenumbers==8.13.27
     # via fastapi-enterprise-template
 pycparser==2.22
@@ -84,20 +82,14 @@ pydantic-settings==2.8.1
     # via fastapi-enterprise-template
 pyjwt==2.10.1
     # via fastapi-enterprise-template
-python-dateutil==2.8.2
-    # via pandas
 python-dotenv==1.0.0
     # via pydantic-settings
 python-multipart==0.0.9
     # via sqladmin
-pytz==2023.3.post1
-    # via pandas
 redis==5.0.6
     # via fastapi-enterprise-template
 sentry-sdk==1.39.2
     # via fastapi-enterprise-template
-six==1.16.0
-    # via python-dateutil
 sniffio==1.3.0
     # via anyio
 sqladmin==0.20.1
@@ -115,8 +107,6 @@ typing-extensions==4.12.2
     # via pydantic
     # via pydantic-core
     # via sqlalchemy
-tzdata==2023.4
-    # via pandas
 urllib3==2.1.0
     # via sentry-sdk
 uvicorn==0.34.0

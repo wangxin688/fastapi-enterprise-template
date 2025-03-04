@@ -10,7 +10,6 @@ dependencies = [
     "pydantic-settings>=2.8.1",
     "uvicorn>=0.34.0",
     "pyjwt>=2.10.1",
-    "pandas>=2.1.4",
     "redis>=5.0.6",
     "sentry_sdk>=1.39.2",
     "httpx>=0.28.1",
@@ -22,6 +21,7 @@ dependencies = [
     "bcrypt>=4.3.0",
     "gunicorn>=22.0.0",
     "aio-pika>=9.4.1",
+    "greenlet>=3.1.1",
 ]
 readme = "README.md"
 requires-python = ">= 3.12"

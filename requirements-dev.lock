@@ -51,6 +51,8 @@ fastapi==0.115.11
     # via fastapi-enterprise-template
 filelock==3.13.1
     # via virtualenv
+greenlet==3.1.1
+    # via fastapi-enterprise-template
 gunicorn==22.0.0
     # via fastapi-enterprise-template
 h11==0.14.0
@@ -84,16 +86,12 @@ mypy-extensions==1.0.0
     # via mypy
 nodeenv==1.8.0
     # via pre-commit
-numpy==1.26.3
-    # via pandas
 packaging==23.2
     # via black
     # via gunicorn
     # via pytest
 pamqp==3.3.0
     # via aiormq
-pandas==2.1.4
-    # via fastapi-enterprise-template
 pathspec==0.12.1
     # via black
 phonenumbers==8.13.27
@@ -126,13 +124,10 @@ pytest-asyncio==0.23.3
 pytest-cov==4.1.0
 python-dateutil==2.8.2
     # via faker
-    # via pandas
 python-dotenv==1.0.0
     # via pydantic-settings
 python-multipart==0.0.9
     # via sqladmin
-pytz==2023.3.post1
-    # via pandas
 pyyaml==6.0.1
     # via pre-commit
 redis==5.0.6
@@ -170,8 +165,6 @@ typing-extensions==4.12.2
     # via pydantic
     # via pydantic-core
     # via sqlalchemy
-tzdata==2023.4
-    # via pandas
 urllib3==2.1.0
     # via sentry-sdk
 uvicorn==0.34.0
