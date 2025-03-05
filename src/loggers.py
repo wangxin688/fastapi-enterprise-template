@@ -22,12 +22,6 @@ LOGGING = {
                 "%(asctime)s | %(levelname)s | %(request_id)s | %(filename)s:%(funcName)s:%(lineno)d | %(message)s"
             )
         },
-        "celery": {
-            "format": (
-                "%(asctime)s | %(levelname)s | %(request_id)s [%(celery_parent_id)s-%(celery_current_id)s] |"
-                " %(filename)s:%(funcName)s:%(lineno)d | %(message)s"
-            )
-        },
     },
     "handlers": {
         "stdout": {
@@ -40,9 +34,6 @@ LOGGING = {
     "loggers": {
         "gunicorn.access": {"handlers": ["stdout"], "propagate": True, "level": "INFO"},
         "guncorn.error": {"handlers": ["stdout"], "propagate": True, "level": "ERROR"},
-        "celery": {"handlers": ["stdout"], "propagate": False, "level": "INFO"},
-        "celery.app.trace": {"handlers": ["stdout"], "propagate": False, "level": "INFO"},
-        "": {"handlers": ["stdout"], "propagate": False, "level": "INFO"},
     },
 }
 

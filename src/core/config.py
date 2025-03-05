@@ -33,7 +33,6 @@ class Settings(BaseSettings):
     LIMITED_RATE: tuple[int, int] = Field(default=(20, 10))
 
     WEB_SENTRY_DSN: str | None = Field(default=None)
-    CELERY_SENTRY_DSN: str | None = Field(default=None)
     SENTRY_SAMPLE_RATE: float = Field(default=1.0, gt=0.0, le=1.0)
     SENTRY_TRACES_SAMPLE_RATE: float | None = Field(default=None, gt=0.0, le=1.0)
 

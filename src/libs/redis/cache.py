@@ -36,8 +36,7 @@ ALWAYS_IGNORE_ARG_TYPES = [Response, Request, Client, AsyncClient, Session, Asyn
 
 class RedisDBType(IntEnum):
     DEFAULT = 0
-    CELERY = 1
-    PUBSUB = 2
+    PUBSUB = 1
 
 
 class CacheNamespace(StrEnum):
