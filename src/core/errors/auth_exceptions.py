@@ -89,12 +89,18 @@ def log_exception(exc: type[BaseException] | Exception, logger_trace_info: bool)
         N/A
     """
     logger = logging.getLogger(__name__)
+
     ex_type, _, ex_traceback = sys.exc_info()
-    trace_back = traceback.format_list(traceback.extract_tb(ex_traceback)[-1:])[-1]
+    if ex_traceback is None:
+        logger.error("Exception traceback is None")
+        return
+
+    trace_back = traceback.extract_tb(ex_traceback)
+    trace_back = "".join(traceback.format_list(trace_back)[-1:])
 
     logger.warning(f"ErrorMessage: {exc!s}")
-    logger.warning(f"Exception Type {ex_type.__name__}: ")
-
+    if ex_type:
+        logger.warning(f"Exception Type {ex_type.__name__}: ")
     if not logger_trace_info:
         logger.warning(f"Stack trace: {trace_back}")
     else:

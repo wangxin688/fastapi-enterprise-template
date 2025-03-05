@@ -1,3 +1,5 @@
+import asyncio
+import gc
 from collections.abc import AsyncGenerator
 from typing import TYPE_CHECKING
 
@@ -10,6 +12,16 @@ from src.core.database.session import async_session
 
 if TYPE_CHECKING:
     from sqlalchemy.ext.asyncio import AsyncSession
+
+
+@pytest.fixture(scope="session")
+def event_loop():
+    policy = asyncio.get_event_loop_policy()
+    loop = policy.new_event_loop()
+    loop.set_debug(True)
+    yield loop
+    gc.collect()
+    loop.close()
 
 
 @pytest.fixture(scope="session")

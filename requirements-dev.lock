@@ -25,7 +25,7 @@ asyncpg==0.30.0
     # via fastapi-enterprise-template
 bcrypt==4.3.0
     # via fastapi-enterprise-template
-black==23.12.1
+black==25.1.0
 certifi==2023.11.17
     # via httpcore
     # via httpx
@@ -37,7 +37,7 @@ cfgv==3.4.0
 click==8.1.7
     # via black
     # via uvicorn
-coverage==7.4.0
+coverage==7.6.12
     # via pytest-cov
 cryptography==42.0.7
     # via fastapi-enterprise-template
@@ -80,7 +80,7 @@ markupsafe==2.1.3
     # via wtforms
 multidict==6.0.5
     # via yarl
-mypy==1.8.0
+mypy==1.15.0
 mypy-extensions==1.0.0
     # via black
     # via mypy
@@ -99,7 +99,7 @@ phonenumbers==8.13.27
 platformdirs==4.1.0
     # via black
     # via virtualenv
-pluggy==1.3.0
+pluggy==1.5.0
     # via pytest
 polyfactory==2.19.0
 pre-commit==4.1.0
@@ -117,11 +117,11 @@ pydantic-settings==2.8.1
     # via fastapi-enterprise-template
 pyjwt==2.10.1
     # via fastapi-enterprise-template
-pytest==7.4.4
+pytest==8.3.5
     # via pytest-asyncio
     # via pytest-cov
-pytest-asyncio==0.23.3
-pytest-cov==4.1.0
+pytest-asyncio==0.25.3
+pytest-cov==6.0.0
 python-dateutil==2.8.2
     # via faker
 python-dotenv==1.0.0
