@@ -43,7 +43,14 @@ docker-compose up -d
 alembic upgrade head
 ```
 
-### 4. Now you can run app
+### 4. Run init db
+```bash
+### default email: admin@system.com
+### default password: admin
+python deploy/init_pg.py
+```
+
+### 5. Now you can run app
 
 ```bash
 ### And this is it:

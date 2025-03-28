@@ -33,7 +33,9 @@ LOGGING = {
     },
     "loggers": {
         "gunicorn.access": {"handlers": ["stdout"], "propagate": True, "level": "INFO"},
-        "guncorn.error": {"handlers": ["stdout"], "propagate": True, "level": "ERROR"},
+        "gunicorn.error": {"handlers": ["stdout"], "propagate": True, "level": "ERROR"},
+        "uvicorn.access": {"handlers": ["stdout"], "propagate": True, "level": "DEBUG"},
+        "uvicorn.error": {"handlers": ["stdout"], "propagate": True, "level": "ERROR"},
     },
 }
 
