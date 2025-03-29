@@ -60,6 +60,8 @@ h11==0.14.0
     # via uvicorn
 httpcore==1.0.2
     # via httpx
+httptools==0.6.4
+    # via fastapi-enterprise-template
 httpx==0.28.1
     # via fastapi-enterprise-template
 identify==2.5.33
@@ -168,6 +170,8 @@ typing-extensions==4.12.2
 urllib3==2.1.0
     # via sentry-sdk
 uvicorn==0.34.0
+    # via fastapi-enterprise-template
+uvloop==0.21.0
     # via fastapi-enterprise-template
 virtualenv==20.25.0
     # via pre-commit
